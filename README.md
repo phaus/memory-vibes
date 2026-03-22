@@ -13,7 +13,7 @@ mem_band/
 ├─ implementation-plan.md # High‑level implementation tasks
 ├─ specs/                  # Specification documents (markdown)
 │   ├─ benchmark-spec.md   # Detailed benchmark description
-│   └─ architecture-spec.md# (optional) Architecture considerations
+│   └─ architecture-spec.md# Architecture considerations
 ├─ src/
 │   ├─ main.cpp            # CLI, orchestration
 │   ├─ benchmark.hpp       # Templated kernel implementations
