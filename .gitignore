@@ -23,6 +23,8 @@ Makefile
 *.sln
 
 # Miscellaneous
+# Test generated files
+Testing/
 *.log
 *.tmp
 .DS_Store
