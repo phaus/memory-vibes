@@ -80,6 +80,14 @@
 - CMake ≥ 3.15
 - C++17 compatible compiler (GCC, Clang, or MSVC)
 
+## Phase 9: CI/CD
+
+- [ ] Add GitHub Actions workflow (`.github/workflows/ci.yml`) to build on Ubuntu, macOS, and Windows.
+- [ ] Install required dependencies (CMake, compiler) in each job.
+- [ ] Configure and build the project in Release mode.
+- [ ] Run unit tests (`ctest`) and verify benchmark execution.
+- [ ] Upload build artifacts or test results if needed.
+- [ ] Add status badge to README.md.
 ## Phase 8: Extended Benchmarks
 ### GPU and ALU Tests
 - [ ] Add GPU memory bandwidth benchmark (CUDA/OpenCL) for copy and compute kernels
