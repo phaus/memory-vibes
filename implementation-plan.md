@@ -1,122 +1,56 @@
 # Implementation Plan
 
-## High-Level Tasks
-
-1. **Project Setup**
-   - Initialize git repository
-   - Create basic directory structure
-   - Set up CMake configuration
-
-2. **Core Implementation**
-   - Implement portable aligned allocation helpers (`aligned_alloc.hpp`)
-   - Implement templated benchmark kernels (`benchmark.hpp`)
-   - Implement CLI and orchestration logic (`main.cpp`)
-
-3. **Build System**
-   - Configure CMakeLists.txt for cross-platform builds
-   - Set up Release build configuration
-   - Ensure proper compiler flags for C++17
-
-4. **Testing & Validation**
-   - Verify correct output format
-   - Test on target platforms (Linux/macOS/Windows)
-   - Validate benchmark results against expected behavior
-
-5. **Documentation**
-   - Complete README.md with usage instructions
-   - Add specification documents (benchmark-spec.md, architecture-spec.md)
-   - Ensure code comments and documentation are clear
-
-## Detailed Task List
-
-### Phase 1: Foundation
+## Phase 1: Foundation
 - [x] Create project directory structure
 - [x] Initialize git repository
 - [x] Create basic CMakeLists.txt
 - [x] Set up src/ directory with placeholder files
 
-### Phase 2: Memory Allocation
+## Phase 2: Memory Allocation
 - [x] Implement aligned_alloc.hpp with platform-independent aligned allocation
-- [ ] Support for cache-line alignment (typically 64-byte)
+- [x] Support for cache-line alignment (typically 64-byte)
 - [ ] Handle allocation failures gracefully
 - [ ] Provide aligned free function
 
-### Phase 3: Benchmark Kernels
+## Phase 3: Benchmark Kernels
 - [ ] Implement templated Copy kernel in benchmark.hpp
 - [ ] Implement templated Triad kernel in benchmark.hpp
 - [ ] Add optional SIMD vectorization support
 - [ ] Ensure numerical correctness of operations
 
-### Phase 4: CLI & Orchestration
+## Phase 4: CLI & Orchestration
 - [ ] Implement command-line argument parsing in main.cpp
-- [ ] Add support for all specified options (-s/--size, -n/--iters, -t/--type, -S/--simd, -h/--help)
+- [ ] Support options: -s/--size, -n/--iters, -t/--type, -S/--simd, -h/--help
 - [ ] Implement benchmark execution loop with timing
 - [ ] Calculate and format bandwidth results
-- [ ] Output results in specified CSV-friendly format
+- [ ] Output results in CSV-friendly format
 
-### Phase 5: Build System
-- [ ] Add global Makefile to simplify build and test commands
-- [ ] Configure CMakeLists.txt for C++17 standard
-- [ ] Set up proper include directories
-- [ ] Configure Release build optimizations
-- [ ] Ensure cross-platform compatibility
+## Phase 5: Build System & CI/CD
+- [ ] Add global Makefile to simplify build/test commands
+- [ ] Configure CMakeLists.txt for C++17 and Release optimizations
+- [x] Add GitHub Actions workflow (`.github/workflows/ci.yml`)
+- [ ] Install required dependencies in CI jobs (CMake, compilers)
+- [ ] Run unit tests (`ctest`) in CI and verify execution
+- [ ] Add status badge to README.md
 
-### Phase 6: Testing
-- [x] Build and test on Linux
-- [x] Build and test on macOS (if available)
-- [x] Build and test on Windows (if available)
+## Phase 6: Testing & Validation
+- [x] Build and test on Linux/macOS/Windows
 - [x] Validate output format matches specification
-- [x] Verify bandwidth calculations are correct
-- [ ] Add longer‑running CTest (e.g., size 1024 MiB, many iterations) to ensure workload exceeds CPU cache
-- Added basic CTest to run mem_band with minimal parameters and verify exit code
+- [ ] Add long-running CTest (1024 MiB) to ensure cache exhaustion
 
-### Phase 7: Documentation
-- [ ] Complete benchmark-spec.md with detailed specifications
-- [ ] Complete architecture-spec.md with architectural decisions
-- [ ] Update README.md with clear usage instructions
-- [ ] Ensure all code is properly commented
+## Phase 7: Legacy Platform Support
+- [ ] Add CMake support for PowerPC32/64 and i386 Linux
+- [ ] Provide toolchain files (`toolchain-ppc32.cmake`, etc.)
+- [ ] Implement `posix_memalign` fallback in `aligned_alloc.hpp`
+- [ ] Guard SIMD flags (`-maltivec` for PPC, `-msse2` for i386)
 
-## Dependencies
-- CMake ≥ 3.15
-- C++17 compatible compiler (GCC, Clang, or MSVC)
+## Phase 8: Extended Benchmarks (GPU/SSD)
+- [ ] Add GPU memory bandwidth benchmark (CUDA/OpenCL)
+- [ ] Implement ALU intensive kernels (Integer/FP stress)
+- [ ] Implement SSD I/O tests (Sequential/Random, 1kB-4kB blocks)
+- [ ] Update `main.cpp` and documentation for GPU/ALU/SSD flags
 
-## Phase 9: CI/CD (URGENT)
+## Phase 9: Documentation
+- [ ] Complete `benchmark-spec.md` and `architecture-spec.md`
+- [ ] Update `README.md` with clear usage and Legacy Support sections
 
-- [x] Add GitHub Actions workflow (`.github/workflows/ci.yml`) to build on Ubuntu, macOS, and Windows.
-- [ ] Install required dependencies (CMake, compiler) in each job.
-- [ ] Configure and build the project in Release mode.
-- [ ] Run unit tests (`ctest`) and verify benchmark execution.
-- [ ] Upload build artifacts or test results if needed.
-- [ ] Add status badge to README.md.
-## Phase 10: Legacy Platform Support
-
-- [ ] Add CMake support for PowerPC32 and PowerPC64 (Darwin and Linux) and i386 Linux.
-- [ ] Provide tool‑chain files (e.g., `toolchain-ppc32.cmake`, `toolchain-ppc64.cmake`, `toolchain-i386.cmake`).
-- [ ] Update `CMakeLists.txt` to detect `CMAKE_SYSTEM_PROCESSOR` and set appropriate `-m32`, `-m64`, or `-maltivec` flags.
-- [ ] Implement fallback aligned allocation in `aligned_alloc.hpp` for platforms lacking `std::aligned_alloc` (use `posix_memalign`).
-- [ ] Guard SIMD flag handling: enable AltiVec (`-maltivec`) on PPC when supported, enable SSE2 (`-msse2`) on i386.
-- [ ] Create CI jobs (GitHub Actions) that build with the cross‑compilers for these legacy targets and run a quick sanity check (`mem_band --size 64 --iters 1`).
-- [ ] Document the required tool‑chains and build steps in `README.md` under a new "Legacy Platform Support" section.
-- [ ] Verify runtime correctness on each platform (output format, exit code 0).
-
-## Phase 8: Extended Benchmarks
-### GPU and ALU Tests
-- [ ] Add GPU memory bandwidth benchmark (CUDA/OpenCL) for copy and compute kernels
-- [ ] Implement ALU intensive kernels to stress integer/floating‑point units
-- [ ] Provide CLI flags `--gpu` and `--alu` to enable these tests
-
-### SSD I/O Benchmark
-- [ ] Implement sequential read/write tests for block sizes 1 kB, 2 kB, 4 kB
-- [ ] Implement random read/write tests for same block sizes
-- [ ] Add CLI options `--ssd` with sub‑options `--seq`, `--rand`, and `--block-size <size>`
-- [ ] Allow selection of target volumes via `--volumes <path1,path2,...>`
-- [ ] Ensure proper flushing and cache eviction for accurate measurements
-
-### Integration & Documentation
-- [ ] Update argument parser in `main.cpp` to handle new options
-- [ ] Extend README and usage docs with GPU/ALU/SSD sections
-- [ ] Add validation checks for required libraries (CUDA, etc.)
-- [ ] Provide example command lines for mixed workloads
-
-- CMake ≥ 3.15
-- C++17 compatible compiler (GCC, Clang, or MSVC)

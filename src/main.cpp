@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 #include <chrono>
-#include <cstdlib>
+#include <type_traits>
 
 #include "aligned_alloc.hpp"
 #include "benchmark.hpp"
@@ -69,7 +69,7 @@ void run_benchmark(const Options& opts) {
     const std::size_t total_bytes = opts.sizeMiB * 1024 * 1024;
     const std::size_t n = total_bytes / element_size;
 
-    // Allocate aligned memory (64‑byte cache line alignment)
+    double copy_time_total = 0.0;
     T* a = static_cast<T*>(mem_band::aligned_alloc(total_bytes, 64));
     T* b = static_cast<T*>(mem_band::aligned_alloc(total_bytes, 64));
     T* c = static_cast<T*>(mem_band::aligned_alloc(total_bytes, 64));
@@ -84,11 +84,24 @@ void run_benchmark(const Options& opts) {
         c[i] = static_cast<T>(0);
     }
 
-    // ---- Copy kernel ----
     double copy_time_total = 0.0;
     for (std::size_t iter = 0; iter < opts.iterations; ++iter) {
         auto start = std::chrono::high_resolution_clock::now();
+#ifdef SIMD_ENABLED
+        if (opts.simd) {
+            if constexpr (std::is_same_v<T, float>) {
+                copy_kernel_simd(a, c, n);
+            } else if constexpr (std::is_same_v<T, double>) {
+                copy_kernel_simd(a, c, n);
+            } else {
+                copy_kernel<T>(a, c, n);
+            }
+        } else {
+            copy_kernel<T>(a, c, n);
+        }
+#else
         copy_kernel<T>(a, c, n);
+#endif
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> diff = end - start;
         copy_time_total += diff.count();
@@ -102,7 +115,17 @@ void run_benchmark(const Options& opts) {
     T scalar = static_cast<T>(3);
     for (std::size_t iter = 0; iter < opts.iterations; ++iter) {
         auto start = std::chrono::high_resolution_clock::now();
-        triad_kernel<T>(a, b, c, scalar, n);
+        if (opts.simd) {
+            if constexpr (std::is_same_v<T, float>) {
+                triad_kernel_simd(a, b, c, scalar, n);
+            } else if constexpr (std::is_same_v<T, double>) {
+                triad_kernel_simd(a, b, c, scalar, n);
+            } else {
+                triad_kernel<T>(a, b, c, scalar, n);
+            }
+        } else {
+            triad_kernel<T>(a, b, c, scalar, n);
+        }
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> diff = end - start;
         triad_time_total += diff.count();
