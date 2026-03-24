@@ -1,0 +1,28 @@
+# Build directories
+build/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# Generated object files and binaries
+*.o
+*.obj
+*.so
+*.dll
+*.exe
+*.a
+*.lib
+*.dylib
+*.out
+
+# IDE/project files
+.vscode/
+.idea/
+*.vcxproj*
+*.sln
+
+# Miscellaneous
+*.log
+*.tmp
+.DS_Store

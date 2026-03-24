@@ -77,5 +77,24 @@ Triad    3.0e+09    0.93      3.23
 - Add non‑temporal (streaming) stores for systems that support them.
 - Provide JSON or CSV output flags for automated data collection.
 
+## Testing
+
+To verify the build succeeded and the benchmark runs correctly:
+
+```bash
+./mem_band --size 64 --iters 2 --type float
+```
+
+You should see output similar to:
+
+```
+# Size: 64 MiB, Type: float, Iterations: 2
+Kernel   Bytes/Iter  Time(s)   Bandwidth(GB/s)
+Copy     ...         ...       ...
+Triad    ...         ...       ...
+```
+
+The exit code will be `0` on success.
+
 ## License
 This project is released under the **MIT License** – see the `LICENSE` file for details.

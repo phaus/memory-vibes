@@ -55,6 +55,7 @@
 - [ ] Output results in specified CSV-friendly format
 
 ### Phase 5: Build System
+- [ ] Add global Makefile to simplify build and test commands
 - [ ] Configure CMakeLists.txt for C++17 standard
 - [ ] Set up proper include directories
 - [ ] Configure Release build optimizations
