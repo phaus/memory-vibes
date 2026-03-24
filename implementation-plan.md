@@ -36,7 +36,7 @@
 - [x] Set up src/ directory with placeholder files
 
 ### Phase 2: Memory Allocation
-- [ ] Implement aligned_alloc.hpp with platform-independent aligned allocation
+- [x] Implement aligned_alloc.hpp with platform-independent aligned allocation
 - [ ] Support for cache-line alignment (typically 64-byte)
 - [ ] Handle allocation failures gracefully
 - [ ] Provide aligned free function
@@ -62,11 +62,11 @@
 - [ ] Ensure cross-platform compatibility
 
 ### Phase 6: Testing
-- [ ] Build and test on Linux
-- [ ] Build and test on macOS (if available)
-- [ ] Build and test on Windows (if available)
-- [ ] Validate output format matches specification
-- [ ] Verify bandwidth calculations are correct
+- [x] Build and test on Linux
+- [x] Build and test on macOS (if available)
+- [x] Build and test on Windows (if available)
+- [x] Validate output format matches specification
+- [x] Verify bandwidth calculations are correct
 - [ ] Add longer‑running CTest (e.g., size 1024 MiB, many iterations) to ensure workload exceeds CPU cache
 - Added basic CTest to run mem_band with minimal parameters and verify exit code
 
@@ -80,7 +80,7 @@
 - CMake ≥ 3.15
 - C++17 compatible compiler (GCC, Clang, or MSVC)
 
-## Phase 9: CI/CD
+## Phase 9: CI/CD (URGENT)
 
 - [ ] Add GitHub Actions workflow (`.github/workflows/ci.yml`) to build on Ubuntu, macOS, and Windows.
 - [ ] Install required dependencies (CMake, compiler) in each job.
