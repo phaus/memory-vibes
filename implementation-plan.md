@@ -88,6 +88,17 @@
 - [ ] Run unit tests (`ctest`) and verify benchmark execution.
 - [ ] Upload build artifacts or test results if needed.
 - [ ] Add status badge to README.md.
+## Phase 10: Legacy Platform Support
+
+- [ ] Add CMake support for PowerPC32 and PowerPC64 (Darwin and Linux) and i386 Linux.
+- [ ] Provide tool‑chain files (e.g., `toolchain-ppc32.cmake`, `toolchain-ppc64.cmake`, `toolchain-i386.cmake`).
+- [ ] Update `CMakeLists.txt` to detect `CMAKE_SYSTEM_PROCESSOR` and set appropriate `-m32`, `-m64`, or `-maltivec` flags.
+- [ ] Implement fallback aligned allocation in `aligned_alloc.hpp` for platforms lacking `std::aligned_alloc` (use `posix_memalign`).
+- [ ] Guard SIMD flag handling: enable AltiVec (`-maltivec`) on PPC when supported, enable SSE2 (`-msse2`) on i386.
+- [ ] Create CI jobs (GitHub Actions) that build with the cross‑compilers for these legacy targets and run a quick sanity check (`mem_band --size 64 --iters 1`).
+- [ ] Document the required tool‑chains and build steps in `README.md` under a new "Legacy Platform Support" section.
+- [ ] Verify runtime correctness on each platform (output format, exit code 0).
+
 ## Phase 8: Extended Benchmarks
 ### GPU and ALU Tests
 - [ ] Add GPU memory bandwidth benchmark (CUDA/OpenCL) for copy and compute kernels
