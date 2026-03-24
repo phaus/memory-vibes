@@ -82,7 +82,7 @@
 
 ## Phase 9: CI/CD (URGENT)
 
-- [ ] Add GitHub Actions workflow (`.github/workflows/ci.yml`) to build on Ubuntu, macOS, and Windows.
+- [x] Add GitHub Actions workflow (`.github/workflows/ci.yml`) to build on Ubuntu, macOS, and Windows.
 - [ ] Install required dependencies (CMake, compiler) in each job.
 - [ ] Configure and build the project in Release mode.
 - [ ] Run unit tests (`ctest`) and verify benchmark execution.
