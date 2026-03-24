@@ -16,6 +16,7 @@ target_include_directories(test_double PRIVATE src)
 target_include_directories(test_benchmark PRIVATE src)
 add_test(NAME DoubleUnitTest COMMAND test_double)
 add_test(NAME MemBandBasicRun COMMAND mem_band --size 8 --iters 1 --type float)
+add_test(NAME MemBandLongRun COMMAND mem_band --size 1024 --iters 5 --type float)
 add_test(NAME BenchmarkUnitTest COMMAND test_benchmark)
 
 target_include_directories(mem_band PRIVATE src)
