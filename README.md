@@ -1,6 +1,6 @@
 # Memory Bandwidth Benchmark
 
-![Generated with local AI on NVIDIA DGX Spark (GB10)](https://img.shields.io/badge/Generated%20with%20AI-NVIDIA%20DGX%20Spark%20GB10-blue)
+![Generated with local AI on NVIDIA DGX Spark (GB10)](https://img.shields.io/badge/Generated%20with%20local%20AI-NVIDIA%20DGX%20Spark%20GB10-blue)
 
 A tiny, portable utility that measures sustainable memory bandwidth on Linux, macOS, and Windows.
 
