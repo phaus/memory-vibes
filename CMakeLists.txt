@@ -20,12 +20,17 @@ add_executable(mem_band src/main.cpp)
 enable_testing()
 add_executable(test_benchmark tests/test_benchmark.cpp)
 add_executable(test_double tests/test_double.cpp)
-target_include_directories(test_double PRIVATE src)
+add_executable(test_alignment tests/test_alignment.cpp)
+
 target_include_directories(test_benchmark PRIVATE src)
+target_include_directories(test_double PRIVATE src)
+target_include_directories(test_alignment PRIVATE src)
+
+add_test(NAME BenchmarkUnitTest COMMAND test_benchmark)
 add_test(NAME DoubleUnitTest COMMAND test_double)
+add_test(NAME AlignmentUnitTest COMMAND test_alignment)
 add_test(NAME MemBandBasicRun COMMAND mem_band --size 8 --iters 1 --type float)
 add_test(NAME MemBandLongRun COMMAND mem_band --size 1024 --iters 5 --type float)
-add_test(NAME BenchmarkUnitTest COMMAND test_benchmark)
 
 target_include_directories(mem_band PRIVATE src)
 

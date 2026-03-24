@@ -8,28 +8,35 @@
 #include <cstddef>
 #include <cstdlib>
 #include <new>
+#include <stdexcept>
 
 namespace mem_band {
-
-inline void* aligned_alloc(std::size_t size, std::size_t alignment) {
-#if defined(_WIN32) || defined(_WIN64)
-    // Windows: use _aligned_malloc
-    return _aligned_malloc(size, alignment);
-#else
-    // POSIX: use posix_memalign
-    void* ptr = nullptr;
-    if (posix_memalign(&ptr, alignment, size) != 0) {
-        return nullptr;
-    }
-    return ptr;
-#endif
-}
 
 inline void aligned_free(void* ptr) noexcept {
 #if defined(_WIN32) || defined(_WIN64)
     _aligned_free(ptr);
 #else
     std::free(ptr);
+#endif
+}
+
+inline void* aligned_alloc(std::size_t size, std::size_t alignment) {
+#if defined(_WIN32) || defined(_WIN64)
+    // Windows: use _aligned_malloc
+    void* ptr = _aligned_malloc(size, alignment);
+    if (ptr == nullptr) {
+        throw std::bad_alloc{};
+    }
+    return ptr;
+#else
+    // POSIX: use posix_memalign
+    void* ptr = nullptr;
+    int err = posix_memalign(&ptr, alignment, size);
+    if (err != 0) {
+        aligned_free(ptr);
+        throw std::bad_alloc{};
+    }
+    return ptr;
 #endif
 }
 
