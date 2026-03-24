@@ -77,3 +77,25 @@
 ## Dependencies
 - CMake ≥ 3.15
 - C++17 compatible compiler (GCC, Clang, or MSVC)
+
+## Phase 8: Extended Benchmarks
+### GPU and ALU Tests
+- [ ] Add GPU memory bandwidth benchmark (CUDA/OpenCL) for copy and compute kernels
+- [ ] Implement ALU intensive kernels to stress integer/floating‑point units
+- [ ] Provide CLI flags `--gpu` and `--alu` to enable these tests
+
+### SSD I/O Benchmark
+- [ ] Implement sequential read/write tests for block sizes 1 kB, 2 kB, 4 kB
+- [ ] Implement random read/write tests for same block sizes
+- [ ] Add CLI options `--ssd` with sub‑options `--seq`, `--rand`, and `--block-size <size>`
+- [ ] Allow selection of target volumes via `--volumes <path1,path2,...>`
+- [ ] Ensure proper flushing and cache eviction for accurate measurements
+
+### Integration & Documentation
+- [ ] Update argument parser in `main.cpp` to handle new options
+- [ ] Extend README and usage docs with GPU/ALU/SSD sections
+- [ ] Add validation checks for required libraries (CUDA, etc.)
+- [ ] Provide example command lines for mixed workloads
+
+- CMake ≥ 3.15
+- C++17 compatible compiler (GCC, Clang, or MSVC)
