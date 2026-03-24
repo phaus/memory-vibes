@@ -84,7 +84,6 @@ void run_benchmark(const Options& opts) {
         c[i] = static_cast<T>(0);
     }
 
-    double copy_time_total = 0.0;
     for (std::size_t iter = 0; iter < opts.iterations; ++iter) {
         auto start = std::chrono::high_resolution_clock::now();
 #ifdef SIMD_ENABLED
