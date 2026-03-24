@@ -67,6 +67,8 @@
 - [ ] Build and test on Windows (if available)
 - [ ] Validate output format matches specification
 - [ ] Verify bandwidth calculations are correct
+- [ ] Add longer‑running CTest (e.g., size 1024 MiB, many iterations) to ensure workload exceeds CPU cache
+- Added basic CTest to run mem_band with minimal parameters and verify exit code
 
 ### Phase 7: Documentation
 - [ ] Complete benchmark-spec.md with detailed specifications

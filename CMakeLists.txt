@@ -8,6 +8,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_executable(mem_band src/main.cpp)
 
+# Enable testing
+enable_testing()
+add_test(NAME MemBandBasicRun COMMAND mem_band --size 8 --iters 1 --type float)
+
 target_include_directories(mem_band PRIVATE src)
 
 # Enable Release optimizations by default
