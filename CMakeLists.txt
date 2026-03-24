@@ -7,14 +7,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_executable(mem_band src/main.cpp)
-# Enable SIMD AVX2 when supported
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    target_compile_options(mem_band PRIVATE -mavx2)
-    target_compile_definitions(mem_band PRIVATE SIMD_ENABLED)
-elseif(MSVC)
-    target_compile_options(mem_band PRIVATE /arch:AVX2)
-    target_compile_definitions(mem_band PRIVATE SIMD_ENABLED)
-endif()
+# SIMD support disabled for compatibility; can be enabled on supported platforms
+# if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+#     target_compile_options(mem_band PRIVATE -mavx2)
+#     target_compile_definitions(mem_band PRIVATE SIMD_ENABLED)
+# elseif(MSVC)
+#     target_compile_options(mem_band PRIVATE /arch:AVX2)
+#     target_compile_definitions(mem_band PRIVATE SIMD_ENABLED)
+# endif()
 
 # Enable testing
 enable_testing()

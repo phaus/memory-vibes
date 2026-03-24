@@ -7,7 +7,9 @@
 
 #ifndef BENCHMARK_HPP
 
+#if defined(SIMD_ENABLED) && defined(__AVX2__)
 #include <immintrin.h> // SIMD intrinsics (AVX2)
+#endif
 #define BENCHMARK_HPP
 
 #include <cstddef>
@@ -61,7 +63,8 @@ inline void triad_kernel_simd(const float* a, const float* b, float* c, float sc
     for (; i + 8 <= n; i += 8) {
         __m256 av = _mm256_load_ps(a + i);
         __m256 bv = _mm256_load_ps(b + i);
-        __m256 res = _mm256_fmadd_ps(s, bv, av); // av + scalar * bv
+        __m256 mul = _mm256_mul_ps(s, bv);
+    __m256 res = _mm256_add_ps(av, mul); // av + scalar * bv
         _mm256_store_ps(c + i, res);
     }
     for (; i < n; ++i) {
@@ -83,6 +86,13 @@ inline void triad_kernel_simd(const double* a, const double* b, double* c, doubl
         c[i] = a[i] + scalar * b[i];
     }
 }
+#else
+// Fallback definitions when SIMD is not enabled – map to scalar kernels
+inline void copy_kernel_simd(const float* a, float* c, std::size_t n) { copy_kernel<float>(a, c, n); }
+inline void copy_kernel_simd(const double* a, double* c, std::size_t n) { copy_kernel<double>(a, c, n); }
+
+inline void triad_kernel_simd(const float* a, const float* b, float* c, float scalar, std::size_t n) { triad_kernel<float>(a, b, c, scalar, n); }
+inline void triad_kernel_simd(const double* a, const double* b, double* c, double scalar, std::size_t n) { triad_kernel<double>(a, b, c, scalar, n); }
 #endif // SIMD_ENABLED && __AVX2__
 
 } // namespace mem_band
