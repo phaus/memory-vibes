@@ -34,7 +34,7 @@
 - [x] Add GitHub Actions workflow (`.github/workflows/ci.yml`)
 - [x] Install required dependencies in CI jobs (CMake, compilers)
 - [x] Run unit tests (`ctest`) in CI and verify execution
-- [ ] Add status badge to README.md
+- [x] Add status badge to README.md
 
 ## Phase 6: Testing & Validation
 - [x] Build and test on Linux/macOS/Windows
