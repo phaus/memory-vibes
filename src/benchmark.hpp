@@ -99,9 +99,22 @@ inline void triad_kernel_simd(const float* a, const float* b, float* c, float sc
 inline void triad_kernel_simd(const double* a, const double* b, double* c, double scalar, std::size_t n) { triad_kernel<double>(a, b, c, scalar, n); }
 #endif // SIMD_ENABLED && __AVX2__
 
-// Random read/write kernel: reads from random indices of a and writes to c.
-// The index sequence is generated once per call for deterministic timing.
-// #include <random>
+// Scale kernel: c[i] = scalar * a[i]
+template <typename T>
+void scale_kernel(const T* a, T* c, T scalar, std::size_t n) {
+    for (std::size_t i = 0; i < n; ++i) {
+        c[i] = scalar * a[i];
+    }
+}
+
+// Add kernel: c[i] = a[i] + b[i]
+template <typename T>
+void add_kernel(const T* a, const T* b, T* c, std::size_t n) {
+    for (std::size_t i = 0; i < n; ++i) {
+        c[i] = a[i] + b[i];
+    }
+}
+
 
 template <typename T>
 void random_rw_kernel(const T* a, T* c, std::size_t n) {

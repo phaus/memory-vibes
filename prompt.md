@@ -9,29 +9,31 @@
 ## Phase 2: Memory Allocation
 - [x] Implement aligned_alloc.hpp with platform-independent aligned allocation
 - [x] Support for cache-line alignment (typically 64-byte)
-- [ ] Handle allocation failures gracefully
-- [ ] Provide aligned free function
+- [x] Handle allocation failures gracefully
+- [x] Provide aligned free function
 
 ## Phase 3: Benchmark Kernels
-- [ ] Implement templated Copy kernel in benchmark.hpp
-- [ ] Implement templated Triad kernel in benchmark.hpp
-- [ ] Add optional SIMD vectorization support
-- [ ] Ensure numerical correctness of operations
+- [x] Implement templated Copy kernel in benchmark.hpp
+- [x] Implement templated Triad kernel in benchmark.hpp
+- [x] Implement templated Scale kernel in benchmark.hpp
+- [x] Implement templated Add kernel in benchmark.hpp
+- [x] Add optional SIMD vectorization support
+- [x] Ensure numerical correctness of operations
 
 ## Phase 4: CLI & Orchestration
-- [ ] Implement command-line argument parsing in main.cpp
-- [ ] Support options: -s/--size, -n/--iters, -t/--type, -S/--simd, -h/--help
-- [ ] Implement benchmark execution loop with timing
-- [ ] Calculate and format bandwidth results
-- [ ] Output results in CSV-friendly format
+- [x] Implement command-line argument parsing in main.cpp
+- [x] Support options: -s/--size, -n/--iters, -t/--type, -S/--simd, -R/--randomrw, -h/--help
+- [x] Implement benchmark execution loop with timing
+- [x] Calculate and format bandwidth results
+- [x] Output results in CSV-friendly format
 
 ## Phase 5: Build System & CI/CD
-- [ ] Add global Makefile to simplify build/test commands
-- [ ] Configure CMakeLists.txt for C++17 and Release optimizations
+- [x] Add global Makefile to simplify build/test commands
+- [x] Configure CMakeLists.txt for C++17 and Release optimizations
 - [x] Add GitHub Actions workflow (`.github/workflows/ci.yml`)
-- [ ] Install required dependencies in CI jobs (CMake, compilers)
-- [ ] Run unit tests (`ctest`) in CI and verify execution
-- [ ] Add status badge to README.md
+- [x] Install required dependencies in CI jobs (CMake, compilers)
+- [x] Run unit tests (`ctest`) in CI and verify execution
+- [x] Add status badge to README.md
 
 ## Phase 6: Testing & Validation
 - [x] Build and test on Linux/macOS/Windows

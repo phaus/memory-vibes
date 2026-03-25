@@ -15,8 +15,8 @@
 
 ## Phase 3: Benchmark Kernels
 - [x] Implement templated Copy kernel in benchmark.hpp
-- [ ] Implement templated Scale kernel in benchmark.hpp
-- [ ] Implement templated Add kernel in benchmark.hpp
+- [x] Implement templated Scale kernel in benchmark.hpp
+- [x] Implement templated Add kernel in benchmark.hpp
 - [x] Implement templated Triad kernel in benchmark.hpp
 - [x] Add optional SIMD vectorization support
 - [x] Ensure numerical correctness of operations
@@ -29,11 +29,11 @@
 - [x] Output results in CSV-friendly format
 
 ## Phase 5: Build System & CI/CD
-- [ ] Add global Makefile to simplify build/test commands
-- [ ] Configure CMakeLists.txt for C++17 and Release optimizations
+- [x] Add global Makefile to simplify build/test commands
+- [x] Configure CMakeLists.txt for C++17 and Release optimizations
 - [x] Add GitHub Actions workflow (`.github/workflows/ci.yml`)
-- [ ] Install required dependencies in CI jobs (CMake, compilers)
-- [ ] Run unit tests (`ctest`) in CI and verify execution
+- [x] Install required dependencies in CI jobs (CMake, compilers)
+- [x] Run unit tests (`ctest`) in CI and verify execution
 - [ ] Add status badge to README.md
 
 ## Phase 6: Testing & Validation
