@@ -33,7 +33,8 @@ add_test(NAME BenchmarkUnitTest COMMAND test_benchmark)
 add_test(NAME DoubleUnitTest COMMAND test_double)
 add_test(NAME AlignmentUnitTest COMMAND test_alignment)
 add_test(NAME MemBandBasicRun COMMAND mem_band --size 8 --iters 1 --type float)
-add_test(NAME MemBandLongRun COMMAND mem_band --size 256 --iters 20 --type float)
+# Long-running test (1024 MiB) to stress cache
+add_test(NAME MemBandLongRun1024 COMMAND mem_band --size 1024 --iters 2 --type float)
 
 target_include_directories(mem_band PRIVATE src)
 
