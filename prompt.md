@@ -1,58 +1,62 @@
-# Implementation Plan
+## Step 1: Read Context
+Read these files:
+- README.md
+- AGENTS.md
+- implementation-plan.md
 
-## Phase 1: Foundation
-- [x] Create project directory structure
-- [x] Initialize git repository
-- [x] Create basic CMakeLists.txt
-- [x] Set up src/ directory with placeholder files
+## Step 2: Pick Task
+- Select EXACTLY ONE task from implementation-plan.md.
+- If dependencies are incomplete, implement the dependencies first.
+- If no clear task is available, pick the first incomplete item.
 
-## Phase 2: Memory Allocation
-- [x] Implement aligned_alloc.hpp with platform-independent aligned allocation
-- [x] Support for cache-line alignment (typically 64-byte)
-- [x] Handle allocation failures gracefully
-- [x] Provide aligned free function
+## Step 3: Execute Task (MANDATORY FLOW)
 
-## Phase 3: Benchmark Kernels
-- [x] Implement templated Copy kernel in benchmark.hpp
-- [x] Implement templated Triad kernel in benchmark.hpp
-- [x] Implement templated Scale kernel in benchmark.hpp
-- [x] Implement templated Add kernel in benchmark.hpp
-- [x] Add optional SIMD vectorization support
-- [x] Ensure numerical correctness of operations
+You MUST follow this sequence strictly:
 
-## Phase 4: CLI & Orchestration
-- [x] Implement command-line argument parsing in main.cpp
-- [x] Support options: -s/--size, -n/--iters, -t/--type, -S/--simd, -R/--randomrw, -h/--help
-- [x] Implement benchmark execution loop with timing
-- [x] Calculate and format bandwidth results
-- [x] Output results in CSV-friendly format
+1. Write tests for the selected task
+   - Prefer unit tests
+   - Tests must fail initially
 
-## Phase 5: Build System & CI/CD
-- [x] Add global Makefile to simplify build/test commands
-- [x] Configure CMakeLists.txt for C++17 and Release optimizations
-- [x] Add GitHub Actions workflow (`.github/workflows/ci.yml`)
-- [x] Install required dependencies in CI jobs (CMake, compilers)
-- [x] Run unit tests (`ctest`) in CI and verify execution
-- [x] Add status badge to README.md
+2. Implement the code
+   - Make minimal changes required to pass tests
 
-## Phase 6: Testing & Validation
-- [x] Build and test on Linux/macOS/Windows
-- [x] Validate output format matches specification
-- [x] Add long-running CTest (1024 MiB) to ensure cache exhaustion
+3. Run tests
+   - If tests fail → fix code immediately
+   - Repeat until all tests pass
 
-## Phase 7: Legacy Platform Support
-- [x] Add CMake support for PowerPC32/64 and i386 Linux
-- [x] Provide toolchain files (`toolchain-ppc32.cmake`, etc.)
-- [ ] Implement `posix_memalign` fallback in `aligned_alloc.hpp`
-- [ ] Guard SIMD flags (`-maltivec` for PPC, `-msse2` for i386)
+## Step 4: Update Plan
+- Mark the task as completed in implementation-plan.md
 
-## Phase 8: Extended Benchmarks (GPU/SSD)
-- [ ] Add GPU memory bandwidth benchmark (CUDA/OpenCL)
-- [ ] Implement ALU intensive kernels (Integer/FP stress)
-- [ ] Implement SSD I/O tests (Sequential/Random, 1kB-4kB blocks)
-- [ ] Update `main.cpp` and documentation for GPU/ALU/SSD flags
+## Step 5: Commit
+- Stage all files
+- Commit with a clear message
+- Push to remote
 
-## Phase 9: Documentation
-- [ ] Complete `benchmark-spec.md` and `architecture-spec.md`
-- [ ] Update `README.md` with clear usage and Legacy Support sections
+## Anti-Stall Rules (CRITICAL)
+
+- NEVER stop after reading files
+- NEVER ask for clarification
+- NEVER wait for input
+- NEVER output only explanations
+
+If unsure:
+- Make a reasonable assumption
+- Proceed with implementation
+
+If stuck:
+- Pick a smaller sub-task
+- OR create a minimal working version
+
+You must ALWAYS produce code changes or tests in every run.
+
+## Output Requirement
+
+Every cycle MUST include at least one of:
+- New or updated test
+- New or updated code
+- Updated implementation-plan.md
+- Git commit
+
+Doing nothing is NOT allowed.
+
 
