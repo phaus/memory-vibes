@@ -83,6 +83,7 @@ Where bytes_per_iteration depends on the kernel:
 - Triad: 3 × array_size_in_bytes
 - RandomRW: 2 × array_size_in_bytes
 - ALU: 4 × array_size_in_bytes
+- GPU Copy: 2 × array_size_in_bytes (host to device and device to host)
 
 ## Implementation Requirements
 1. Must be written in C++17

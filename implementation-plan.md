@@ -48,7 +48,7 @@
 - [x] Guard SIMD flags (`-maltivec` for PPC, `-msse2` for i386)
 
 ## Phase 8: Extended Benchmarks (GPU/SSD)
-- [ ] Add GPU memory bandwidth benchmark (CUDA/OpenCL)
+- [x] Add GPU memory bandwidth benchmark (CUDA/OpenCL)
 - [x] Implement ALU intensive kernels (Integer/FP stress)
 - [ ] Implement SSD I/O tests (Sequential/Random, 1kB-4kB blocks)
 - [ ] Update `main.cpp` and documentation for GPU/ALU/SSD flags
