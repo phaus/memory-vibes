@@ -6,8 +6,8 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <chrono>
 #include <type_traits>
+#include <chrono>
 
 #include "aligned_alloc.hpp"
 #include "benchmark.hpp"

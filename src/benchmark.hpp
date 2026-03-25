@@ -12,7 +12,11 @@
 #endif
 #define BENCHMARK_HPP
 
-#include <cstddef>
+#include <type_traits>
+#include <algorithm>
+#include <cmath>
+#include <vector>
+#include <random>
 
 namespace mem_band {
 
@@ -97,7 +101,7 @@ inline void triad_kernel_simd(const double* a, const double* b, double* c, doubl
 
 // Random read/write kernel: reads from random indices of a and writes to c.
 // The index sequence is generated once per call for deterministic timing.
-#include <random>
+// #include <random>
 
 template <typename T>
 void random_rw_kernel(const T* a, T* c, std::size_t n) {

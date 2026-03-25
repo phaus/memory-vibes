@@ -9,21 +9,21 @@
 ## Phase 2: Memory Allocation
 - [x] Implement aligned_alloc.hpp with platform-independent aligned allocation
 - [x] Support for cache-line alignment (typically 64-byte)
-- [ ] Handle allocation failures gracefully
-- [ ] Provide aligned free function
+- [x] Handle allocation failures gracefully
+- [x] Provide aligned free function
 
 ## Phase 3: Benchmark Kernels
-- [ ] Implement templated Copy kernel in benchmark.hpp
-- [ ] Implement templated Triad kernel in benchmark.hpp
-- [ ] Add optional SIMD vectorization support
-- [ ] Ensure numerical correctness of operations
+- [x] Implement templated Copy kernel in benchmark.hpp
+- [x] Implement templated Triad kernel in benchmark.hpp
+- [x] Add optional SIMD vectorization support
+- [x] Ensure numerical correctness of operations
 
 ## Phase 4: CLI & Orchestration
-- [ ] Implement command-line argument parsing in main.cpp
-- [ ] Support options: -s/--size, -n/--iters, -t/--type, -S/--simd, -h/--help
-- [ ] Implement benchmark execution loop with timing
-- [ ] Calculate and format bandwidth results
-- [ ] Output results in CSV-friendly format
+- [x] Implement command-line argument parsing in main.cpp
+- [x] Support options: -s/--size, -n/--iters, -t/--type, -S/--simd, -h/--help
+- [x] Implement benchmark execution loop with timing
+- [x] Calculate and format bandwidth results
+- [x] Output results in CSV-friendly format
 
 ## Phase 5: Build System & CI/CD
 - [ ] Add global Makefile to simplify build/test commands
