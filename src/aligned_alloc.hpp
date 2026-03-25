@@ -22,18 +22,18 @@ inline void aligned_free(void* ptr) noexcept {
 
 inline void* aligned_alloc(std::size_t size, std::size_t alignment) {
 #if defined(_WIN32) || defined(_WIN64)
-    // Windows: use _aligned_malloc; throw on failure
+    // Windows: use _aligned_malloc; return nullptr on failure
     void* ptr = _aligned_malloc(size, alignment);
     if (!ptr) {
-        throw std::bad_alloc();
+        return nullptr;
     }
     return ptr;
 #else
-    // POSIX: use posix_memalign; throw on failure
+    // POSIX: use posix_memalign; return nullptr on failure
     void* ptr = nullptr;
     int err = posix_memalign(&ptr, alignment, size);
     if (err != 0) {
-        throw std::bad_alloc();
+        return nullptr;
     }
     return ptr;
 #endif

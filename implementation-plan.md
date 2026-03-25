@@ -10,6 +10,7 @@
 - [x] Implement aligned_alloc.hpp with platform-independent aligned allocation
 - [x] Support for cache-line alignment (typically 64-byte)
 - [x] Handle allocation failures gracefully
+- Updated aligned_alloc to return nullptr on failure (no exceptions)
 - [x] Provide aligned free function
 
 ## Phase 3: Benchmark Kernels
