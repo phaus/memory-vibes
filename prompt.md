@@ -8,7 +8,7 @@
 
 ## Phase 2: Memory Allocation
 - [x] Implement aligned_alloc.hpp with platform-independent aligned allocation
-- [ ] Support for cache-line alignment (typically 64-byte)
+- [x] Support for cache-line alignment (typically 64-byte)
 - [ ] Handle allocation failures gracefully
 - [ ] Provide aligned free function
 
