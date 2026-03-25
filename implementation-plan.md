@@ -14,13 +14,15 @@
 
 ## Phase 3: Benchmark Kernels
 - [x] Implement templated Copy kernel in benchmark.hpp
+- [ ] Implement templated Scale kernel in benchmark.hpp
+- [ ] Implement templated Add kernel in benchmark.hpp
 - [x] Implement templated Triad kernel in benchmark.hpp
 - [x] Add optional SIMD vectorization support
 - [x] Ensure numerical correctness of operations
 
 ## Phase 4: CLI & Orchestration
 - [x] Implement command-line argument parsing in main.cpp
-- [x] Support options: -s/--size, -n/--iters, -t/--type, -S/--simd, -h/--help
+- [x] Support options: -s/--size, -n/--iters, -t/--type, -S/--simd, -R/--randomrw, -h/--help
 - [x] Implement benchmark execution loop with timing
 - [x] Calculate and format bandwidth results
 - [x] Output results in CSV-friendly format
