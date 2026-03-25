@@ -4,6 +4,8 @@
 
 A tiny, portable utility that measures sustainable memory bandwidth on Linux, macOS, and Windows.
 
+📄 **Detailed benchmark specification:** [specs/benchmark-spec.md](./specs/benchmark-spec.md)
+
 ## Overview
 The program implements a subset of the well‑known **STREAM** benchmark kernels (Copy and Triad) and reports the achieved bandwidth in GB/s. It is written in **C++17**, uses only the C++ standard library, and is built with **CMake** to generate native build files for all three platforms.
 

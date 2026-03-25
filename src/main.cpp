@@ -133,6 +133,19 @@ void run_benchmark(const Options& opts) {
     double triad_bytes = 3.0 * total_bytes; // two reads + one write
     double triad_bandwidth = triad_bytes / triad_time_avg / 1e9; // GB/s
 
+    // ---- Random read/write kernel ----
+    double rand_time_total = 0.0;
+    for (std::size_t iter = 0; iter < opts.iterations; ++iter) {
+        auto start = std::chrono::high_resolution_clock::now();
+        random_rw_kernel<T>(a, c, n);
+        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> diff = end - start;
+        rand_time_total += diff.count();
+    }
+    double rand_time_avg = rand_time_total / static_cast<double>(opts.iterations);
+    double rand_bytes = 2.0 * total_bytes; // read + write per element (random access)
+    double rand_bandwidth = rand_bytes / rand_time_avg / 1e9; // GB/s
+
     // Output results
     std::cout << "# Size: " << opts.sizeMiB << " MiB, Type: " << opts.type
               << ", Iterations: " << opts.iterations << "\n";
@@ -141,6 +154,8 @@ void run_benchmark(const Options& opts) {
               << copy_time_avg << "    " << copy_bandwidth << "\n";
     std::cout << "Triad    " << static_cast<std::size_t>(triad_bytes) << "    "
               << triad_time_avg << "    " << triad_bandwidth << "\n";
+    std::cout << "RandomRW " << static_cast<std::size_t>(rand_bytes) << "    "
+              << rand_time_avg << "    " << rand_bandwidth << "\n";
 
     aligned_free(a);
     aligned_free(b);

@@ -95,6 +95,24 @@ inline void triad_kernel_simd(const float* a, const float* b, float* c, float sc
 inline void triad_kernel_simd(const double* a, const double* b, double* c, double scalar, std::size_t n) { triad_kernel<double>(a, b, c, scalar, n); }
 #endif // SIMD_ENABLED && __AVX2__
 
+// Random read/write kernel: reads from random indices of a and writes to c.
+// The index sequence is generated once per call for deterministic timing.
+#include <random>
+
+template <typename T>
+void random_rw_kernel(const T* a, T* c, std::size_t n) {
+    // Create a vector of indices [0, n)
+    std::vector<std::size_t> idx(n);
+    for (std::size_t i = 0; i < n; ++i) idx[i] = i;
+    // Shuffle indices
+    std::mt19937 rng(0xDEADBEEF); // deterministic seed
+    std::shuffle(idx.begin(), idx.end(), rng);
+    // Perform random accesses
+    for (std::size_t i = 0; i < n; ++i) {
+        c[idx[i]] = a[idx[i]];
+    }
+}
+
 } // namespace mem_band
 
 #endif // BENCHMARK_HPP
