@@ -22,6 +22,12 @@ The benchmark implements three kernels from the STREAM benchmark suite:
 - Bytes per element: 2 × element size (one read, one write) per random access
 - Used to assess random‑access memory performance
 
+### ALU Kernel
+- Operation: `temp = a[i] * b[i] + c[i]; a[i] = temp * (c[i] + 1);`
+- Memory access pattern: Reads from arrays `a`, `b`, `c`; writes to array `a`
+- Bytes per element: 4 × element size (three reads, one write) per element
+- Used to assess ALU performance
+
 
 ## Configuration Options
 The benchmark accepts the following command-line options:
@@ -54,6 +60,8 @@ The benchmark produces tabular, CSV-friendly output with the following format:
 Kernel   Bytes/Iter  Time(s)   Bandwidth(GB/s)
 Copy     <bytes>     <time>    <bandwidth>
 Triad    <bytes>     <time>    <bandwidth>
+RandomRW <bytes>     <time>    <bandwidth>
+ALU      <bytes>     <time>    <bandwidth>
 ```
 
 Where:
@@ -73,6 +81,8 @@ bandwidth(GB/s) = (bytes_per_iteration) / (time_in_seconds) / 1e9
 Where bytes_per_iteration depends on the kernel:
 - Copy: 2 × array_size_in_bytes
 - Triad: 3 × array_size_in_bytes
+- RandomRW: 2 × array_size_in_bytes
+- ALU: 4 × array_size_in_bytes
 
 ## Implementation Requirements
 1. Must be written in C++17

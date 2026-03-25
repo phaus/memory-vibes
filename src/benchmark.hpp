@@ -130,6 +130,17 @@ void random_rw_kernel(const T* a, T* c, std::size_t n) {
     }
 }
 
+// ALU kernel: ALU-intensive operation (multiply-add-multiply-add)
+//   temp = a[i] * b[i] + c[i]
+//   a[i] = temp * c[i] + temp
+template <typename T>
+void alu_kernel(T* a, const T* b, const T* c, std::size_t n) {
+    for (std::size_t i = 0; i < n; ++i) {
+        T temp = a[i] * b[i] + c[i];
+        a[i] = temp * (c[i] + T(1));
+    }
+}
+
 } // namespace mem_band
 
 #endif // BENCHMARK_HPP

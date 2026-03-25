@@ -19,6 +19,7 @@ struct Options {
     std::size_t iterations = 20;    // timed iterations per kernel
     std::string type = "float";   // data type: float or double
     bool simd = false;              // placeholder – not implemented
+    bool alu = false;               // Run ALU-intensive kernel
 };
 
 void print_usage(const char* prog) {
@@ -28,6 +29,7 @@ void print_usage(const char* prog) {
               << "  -n, --iters <N>        Number of timed iterations per kernel (default: 20)\n"
               << "  -t, --type <float|double> Data type (default: float)\n"
               << "  -S, --simd             Enable SIMD (not implemented)\n"
+              << "  -A, --alu              Run ALU-intensive kernel (multiply-add-multiply-add)\n"
               << "  -h, --help             Show this help message\n";
 }
 
@@ -54,6 +56,9 @@ bool parse_args(int argc, char* argv[], Options& opts) {
         }
         else if (a == "-S" || a == "--simd") {
             opts.simd = true; // not used – placeholder for future SIMD implementations
+        }
+        else if (a == "-A" || a == "--alu") {
+            opts.alu = true;
         }
         else {
             std::cerr << "Unknown option: " << a << "\n";
@@ -86,7 +91,7 @@ void run_benchmark(const Options& opts) {
 
     for (std::size_t iter = 0; iter < opts.iterations; ++iter) {
         auto start = std::chrono::high_resolution_clock::now();
-#ifdef SIMD_ENABLED
+    #ifdef SIMD_ENABLED
         if (opts.simd) {
             if constexpr (std::is_same_v<T, float>) {
                 copy_kernel_simd(a, c, n);
@@ -98,9 +103,9 @@ void run_benchmark(const Options& opts) {
         } else {
             copy_kernel<T>(a, c, n);
         }
-#else
+    #else
         copy_kernel<T>(a, c, n);
-#endif
+    #endif
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> diff = end - start;
         copy_time_total += diff.count();
@@ -146,7 +151,42 @@ void run_benchmark(const Options& opts) {
     double rand_bytes = 2.0 * total_bytes; // read + write per element (random access)
     double rand_bandwidth = rand_bytes / rand_time_avg / 1e9; // GB/s
 
-    // Output results
+    // ---- ALU kernel (if requested) --
+    double alu_time_total = 0.0;
+    if (opts.alu) {
+        for (std::size_t iter = 0; iter < opts.iterations; ++iter) {
+            auto start = std::chrono::high_resolution_clock::now();
+            alu_kernel(a, b, c, n);
+            auto end = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<double> diff = end - start;
+            alu_time_total += diff.count();
+        }
+        double alu_time_avg = alu_time_total / static_cast<double>(opts.iterations);
+        // ALU operations: 2 multiplies, 2 adds per element = 4 FLOPS per element
+        // Bytes accessed: 3 reads (a, b, c) + 1 write (a) = 4 * element_size per element
+        double alu_bytes = 4.0 * total_bytes; // 3 reads + 1 write per element
+        double alu_bandwidth = alu_bytes / alu_time_avg / 1e9; // GB/s
+
+        // Output results
+        std::cout << "# Size: " << opts.sizeMiB << " MiB, Type: " << opts.type
+                  << ", Iterations: " << opts.iterations << "\n";
+        std::cout << "Kernel   Bytes/Iter  Time(s)   Bandwidth(GB/s)\n";
+        std::cout << "Copy     " << static_cast<std::size_t>(copy_bytes) << "    "
+                  << copy_time_avg << "    " << copy_bandwidth << "\n";
+        std::cout << "Triad    " << static_cast<std::size_t>(triad_bytes) << "    "
+                  << triad_time_avg << "    " << triad_bandwidth << "\n";
+        std::cout << "RandomRW " << static_cast<std::size_t>(rand_bytes) << "    "
+                  << rand_time_avg << "    " << rand_bandwidth << "\n";
+        std::cout << "ALU      " << static_cast<std::size_t>(alu_bytes) << "    "
+                  << alu_time_avg << "    " << alu_bandwidth << "\n";
+
+        aligned_free(a);
+        aligned_free(b);
+        aligned_free(c);
+        return;
+    }
+
+    // Output results (original format if ALU not requested)
     std::cout << "# Size: " << opts.sizeMiB << " MiB, Type: " << opts.type
               << ", Iterations: " << opts.iterations << "\n";
     std::cout << "Kernel   Bytes/Iter  Time(s)   Bandwidth(GB/s)\n";
