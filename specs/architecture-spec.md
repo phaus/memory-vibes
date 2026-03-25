@@ -4,9 +4,9 @@
 The memory bandwidth benchmark follows a modular design separating concerns into distinct components:
 
 ### Components
-1. **Main Orchestration** (`src/main.cpp`) - Handles command-line argument parsing, benchmark execution coordination, and output formatting
-2. **Benchmark Kernels** (`src/benchmark.hpp`) - Templated implementations of the Copy and Triad STREAM kernels
-3. **Memory Allocation** (`src/aligned_alloc.hpp`) - Portable aligned memory allocation helpers for proper cache-line alignment
+1. **Main Orchestration** (`src/main.cpp`) – Handles command‑line argument parsing, benchmark execution coordination (including the RandomRW kernel), and output formatting
+2. **Benchmark Kernels** (`src/benchmark.hpp`) – Templated implementations of the Copy, Triad, and RandomRW kernels
+3. **Memory Allocation** (`src/aligned_alloc.hpp`) – Portable aligned memory allocation helpers for proper cache‑line alignment
 
 ### Data Flow
 1. Command-line arguments are parsed in `main.cpp`

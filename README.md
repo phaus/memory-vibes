@@ -7,7 +7,7 @@ A tiny, portable utility that measures sustainable memory bandwidth on Linux, ma
 📄 **Detailed benchmark specification:** [specs/benchmark-spec.md](./specs/benchmark-spec.md)
 
 ## Overview
-The program implements a subset of the well‑known **STREAM** benchmark kernels (Copy and Triad) and reports the achieved bandwidth in GB/s. It is written in **C++17**, uses only the C++ standard library, and is built with **CMake** to generate native build files for all three platforms.
+The program implements a subset of the well‑known **STREAM** benchmark kernels (Copy, Triad, and RandomRW) and reports the achieved bandwidth in GB/s. It is written in **C++17**, uses only the C++ standard library, and is built with **CMake** to generate native build files for all three platforms.
 
 ## Repository Layout
 ```
@@ -56,18 +56,20 @@ Options:
   -n, --iters <N>        Number of timed iterations per kernel (default: 20)
   -t, --type <float|double> Data type (default: float)
   -S, --simd             Enable SIMD‑vectorised kernels (requires compiler support)
+  -R, --randomrw         Run RandomRW kernel (reads random indices)
   -h, --help             Show this help message
 ```
 Example:
 ```bash
 ./mem_band --size 1024 --iters 30 --type double
 ```
-Output (tabular, CSV‑friendly):
+### Output (including RandomRW)
 ```
 # Size: 1024 MiB, Type: double, Iterations: 30
 Kernel   Bytes/Iter  Time(s)   Bandwidth(GB/s)
 Copy     2.0e+09    0.62      3.23
 Triad    3.0e+09    0.93      3.23
+RandomRW 2.0e+09    0.34      0.41
 ```
 
 ## Interpreting Results

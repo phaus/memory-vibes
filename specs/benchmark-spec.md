@@ -4,7 +4,7 @@
 This document specifies the behavior and implementation details of the memory bandwidth benchmark utility. The benchmark measures sustainable memory bandwidth on Linux, macOS, and Windows systems using a subset of the STREAM benchmark kernels.
 
 ## Supported Kernels
-The benchmark implements two kernels from the STREAM benchmark suite:
+The benchmark implements three kernels from the STREAM benchmark suite:
 
 ### Copy Kernel
 - Operation: `c[i] = a[i]`
@@ -15,6 +15,13 @@ The benchmark implements two kernels from the STREAM benchmark suite:
 - Operation: `c[i] = a[i] + scalar * b[i]`
 - Memory access pattern: Read from arrays `a` and `b`, write to array `c`
 - Bytes per element: 3 × element size (two reads, one write)
+
+### RandomRW Kernel
+- Operation: `c[idx[i]] = a[idx[i]]` where `idx` is a shuffled index vector
+- Memory access pattern: Random reads from `a` and random writes to `c`
+- Bytes per element: 2 × element size (one read, one write) per random access
+- Used to assess random‑access memory performance
+
 
 ## Configuration Options
 The benchmark accepts the following command-line options:
