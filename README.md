@@ -1,6 +1,6 @@
 # Memory Bandwidth Benchmark
 
-![Generated with local AI](https://img.shields.io/badge/Generated%20with%20local%20AI-blue) ![Hardware](https://img.shields.io/badge/Hardware-NVIDIA%20DGX%20Spark%20GB10-blue) ![Model](https://img.shields.io/badge/Model-gpt--oss%3A120b-blue) ![CI Build Status](https://img.shields.io/github/actions/workflow/status/phaus/memory-vibes/ci.yml?branch=main&logo=github-actions)
+![Generated with local AI](https://img.shields.io/badge/Generated%20with%20local%20AI-blue) ![Hardware](https://img.shields.io/badge/Hardware-NVIDIA%20DGX%20Spark%20GB10-blue) ![Model](https://img.shields.io/badge/Model-nemotron-3-super%3A120b-blue) ![CI Build Status](https://img.shields.io/github/actions/workflow/status/phaus/memory-vibes/ci.yml?branch=main&logo=github-actions)
 
 A tiny, portable utility that measures sustainable memory bandwidth on Linux, macOS, and Windows.
 
