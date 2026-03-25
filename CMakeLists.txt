@@ -39,6 +39,10 @@ add_test(NAME MemBandLongRun1024 COMMAND mem_band --size 1024 --iters 2 --type f
 target_include_directories(mem_band PRIVATE src)
 
 # Enable Release optimizations by default
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release)
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "i386")
+    add_compile_options(-msse2)
+endif()
+
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "powerpc")
+    add_compile_options(-maltivec)
 endif()

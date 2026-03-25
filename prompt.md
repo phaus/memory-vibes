@@ -38,11 +38,11 @@
 ## Phase 6: Testing & Validation
 - [x] Build and test on Linux/macOS/Windows
 - [x] Validate output format matches specification
-- [ ] Add long-running CTest (1024 MiB) to ensure cache exhaustion
+- [x] Add long-running CTest (1024 MiB) to ensure cache exhaustion
 
 ## Phase 7: Legacy Platform Support
-- [ ] Add CMake support for PowerPC32/64 and i386 Linux
-- [ ] Provide toolchain files (`toolchain-ppc32.cmake`, etc.)
+- [x] Add CMake support for PowerPC32/64 and i386 Linux
+- [x] Provide toolchain files (`toolchain-ppc32.cmake`, etc.)
 - [ ] Implement `posix_memalign` fallback in `aligned_alloc.hpp`
 - [ ] Guard SIMD flags (`-maltivec` for PPC, `-msse2` for i386)
 
