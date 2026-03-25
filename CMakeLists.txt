@@ -8,7 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_executable(mem_band src/main.cpp)
 # SIMD support can be enabled via the ENABLE_SIMD option.
-option(ENABLE_SIMD "Enable SIMD vectorised kernels (requires AVX2 support)" OFF)
+option(ENABLE_SIMD "Enable SIMD vectorised kernels (requires appropriate SIMD support)" OFF)
 if(ENABLE_SIMD)
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         target_compile_options(mem_band PRIVATE -mavx2)
