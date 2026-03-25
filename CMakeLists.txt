@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(mem_band LANGUAGES CXX CUDA)
+project(mem_band LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -45,22 +45,10 @@ add_executable(test_double tests/test_double.cpp)
 add_executable(test_alignment tests/test_alignment.cpp)
 add_executable(test_alu tests/test_alu.cpp)
 
-# GPU test if CUDA is available
-find_package(CUDA QUIET)
-if(CUDA_FOUND)
-    add_executable(test_gpu tests/test_gpu.cu)
-    target_include_directories(test_gpu PRIVATE ${CUDA_INCLUDE_DIRS} src)
-    target_link_libraries(test_gpu PRIVATE ${CUDA_LIBRARIES})
-    add_test(NAME GPUBenchmarkTest COMMAND test_gpu)
-endif()
-
 target_include_directories(test_benchmark PRIVATE src)
 target_include_directories(test_double PRIVATE src)
 target_include_directories(test_alignment PRIVATE src)
 target_include_directories(test_alu PRIVATE src)
-if(CUDA_FOUND)
-    target_include_directories(test_gpu PRIVATE ${CUDA_INCLUDE_DIRS})
-endif()
 
 add_test(NAME BenchmarkUnitTest COMMAND test_benchmark)
 add_test(NAME DoubleUnitTest COMMAND test_double)
