@@ -152,8 +152,8 @@ void TestCleanup() {
 
 // Test with different block sizes
 void TestVaryingBlockSizes() {
-    std::string test_dir = fs::temp_directory_path() / "mem_band_ssd_test";
-    fs::create_directories(test_dir);
+    fs::path test_dir_path = fs::temp_directory_path() / "mem_band_ssd_test";
+    fs::create_directories(test_dir_path);
     
     std::vector<std::size_t> block_sizes;
     block_sizes.push_back(1024);
@@ -162,7 +162,7 @@ void TestVaryingBlockSizes() {
     
     for (const auto& block_size : block_sizes) {
         mem_band::SSDConfig config{};
-        config.path = test_dir;
+        config.path = test_dir_path.string();
         config.block_size = block_size;
         config.num_blocks = 50;
         config.sequential = true;
