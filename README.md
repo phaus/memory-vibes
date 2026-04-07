@@ -7,9 +7,42 @@ A tiny, portable utility that measures sustainable memory bandwidth on Linux, ma
 📄 **Detailed benchmark specification:** [specs/benchmark-spec.md](./specs/benchmark-spec.md)
 
 ## Overview
-The program implements a subset of the well‑known **STREAM** benchmark kernels (Copy, Triad, and RandomRW) and reports the achieved bandwidth in GB/s. It is written in **C++17**, uses only the C++ standard library, and is built with **CMake** to generate native build files for all three platforms.
+The program implements the following benchmarks:
+
+**Memory Bandwidth Benchmarks (STREAM-like):**
+- **Copy**: `c[i] = a[i]` – measures raw read-write bandwidth
+- **Triad**: `c[i] = a[i] + scalar * b[i]` – measures memory bandwidth with arithmetic
+- **RandomRW**: Random access read/write – assesses random memory performance
+- **ALU**: ALU-intensive operations – measures compute-bound performance
+
+**SSD I/O Benchmarks:**
+- **Sequential Read/Write**: Measures sustained sequential throughput
+- **Random Read/Write**: Measures IOPS and latency for random access
+- Configurable block sizes (1kB-4kB) for different workload simulations
+
+All benchmarks are written in **C++17**, use only the C++ standard library, and are built with **CMake** for Linux, macOS, and Windows.
 
 ## Repository Layout
+```
+mem_band/
+├─ CMakeLists.txt          # CMake build script
+├─ README.md               # This file
+├─ implementation-plan.md # High‑level implementation tasks
+├─ specs/                  # Specification documents (markdown)
+│   ├─ benchmark-spec.md   # Detailed benchmark description
+│   └─ architecture-spec.md# Architecture considerations
+├─ src/
+│   ├─ main.cpp            # CLI, orchestration
+│   ├─ benchmark.hpp       # Memory kernel implementations
+│   ├─ ssd_benchmark.hpp   # SSD I/O benchmark implementations
+│   └─ aligned_alloc.hpp   # Portable aligned allocation helpers
+└─ tests/                  # Unit tests
+    ├─ test_benchmark.cpp  # Basic kernel tests
+    ├─ test_double.cpp     # Double precision tests
+    ├─ test_alignment.cpp  # Alignment tests
+    ├─ test_alu.cpp        # ALU kernel tests
+    └─ test_ssd_benchmark.cpp  # SSD I/O benchmark tests
+``` 
 ```
 mem_band/
 ├─ CMakeLists.txt          # CMake build script
@@ -55,15 +88,20 @@ Options:
   -s, --size <MiB>       Size of each array (default: 256)
   -n, --iters <N>        Number of timed iterations per kernel (default: 20)
   -t, --type <float|double> Data type (default: float)
-  -S, --simd             Enable SIMD‑vectorised kernels (requires compiler support)
-  -R, --randomrw         Run RandomRW kernel (reads random indices)
+  -S, --simd             Enable SIMD vectorised kernels (requires compiler support)
+  -A, --alu              Run ALU-intensive kernel
+  -I, --ssd              Run SSD I/O benchmark
+  --ssd-path <path>      SSD benchmark directory (default: /tmp)
+  --ssd-block <size>     SSD block size in bytes (default: 4096)
+  --ssd-random           Random I/O vs sequential
+  --ssd-read-only        Read-only SSD benchmark
   -h, --help             Show this help message
 ```
-Example:
+### Memory Bandwidth Benchmark Example
 ```bash
 ./mem_band --size 1024 --iters 30 --type double
 ```
-### Output (including RandomRW)
+**Output:**
 ```
 # Size: 1024 MiB, Type: double, Iterations: 30
 Kernel   Bytes/Iter  Time(s)   Bandwidth(GB/s)
@@ -71,11 +109,34 @@ Copy     2.0e+09    0.62      3.23
 Triad    3.0e+09    0.93      3.23
 RandomRW 2.0e+09    0.34      0.41
 ```
+### SSD I/O Benchmark Example
+```bash
+./mem_band --ssd --ssd-path /tmp --ssd-block 4096
+```
+**Output:**
+```
+# SSD I/O Benchmark
+# Path: /tmp, Block Size: 4096 bytes, Random I/O: no
+
+Benchmark     Bandwidth(MB/s)    IOPS      Latency(us)
+SequentialWrite  4.02e+07   1.03e+07  0.097
+```
 
 ## Interpreting Results
-- **Copy** measures raw read‑write bandwidth (2 × element size per element).
-- **Triad** adds a multiply‑add operation; bandwidth should be similar if the kernel is truly memory bound.
-- As the array size exceeds the last‑level cache, the measured bandwidth typically plateaus. Use this plateau value as the system’s sustainable memory bandwidth – a useful metric when evaluating hardware for AI workloads.
+
+### Memory Bandwidth
+- **Copy**: Measures raw read-write bandwidth (2× element size per element).
+- **Triad**: Measures memory bandwidth with arithmetic operations.
+- **RandomRW**: Measures random access performance (typically much lower than sequential).
+- **ALU**: Measures compute-bound performance.
+- As array size exceeds last-level cache, bandwidth typically plateaus. Use this plateau value as the system's sustainable memory bandwidth – a useful metric when evaluating hardware for AI workloads.
+
+### SSD I/O
+- **Sequential Read/Write**: Measures sustained throughput (typical for bulk data loading).
+- **Random Read/Write**: Measures IOPS and latency (typical for database/cache workloads).
+- Higher block sizes (4KB) better represent real-world file I/O.
+- Lower latency values indicate faster response times.
+- Compare results across storage types (HDD vs SSD vs NVMe) to understand storage bottlenecks.
 
 ## Extending the Benchmark
 - Add multi‑threaded kernels (OpenMP / `std::thread`).
@@ -85,22 +146,26 @@ RandomRW 2.0e+09    0.34      0.41
 
 ## Testing
 
-To verify the build succeeded and the benchmark runs correctly:
-
+### Memory Bandwidth Benchmark
 ```bash
 ./mem_band --size 64 --iters 2 --type float
 ```
+Output should show Copy, Triad, RandomRW kernel results with bandwidth in GB/s.
 
-You should see output similar to:
-
+### SSD I/O Benchmark
+```bash
+./build/test_ssd
 ```
-# Size: 64 MiB, Type: float, Iterations: 2
-Kernel   Bytes/Iter  Time(s)   Bandwidth(GB/s)
-Copy     ...         ...       ...
-Triad    ...         ...       ...
+Runs 9 unit tests for SSD benchmark functionality. Or test manually:
+```bash
+./mem_band --ssd --ssd-path /tmp --ssd-block 4096
 ```
 
-The exit code will be `0` on success.
+### Full Test Suite
+```bash
+cd build && ctest --output-on-failure
+```
+All 8 tests should pass (including SSD tests).
 
 ## License
 This project is released under the **MIT License** – see the `LICENSE` file for details.

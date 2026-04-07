@@ -28,6 +28,20 @@ The benchmark implements three kernels from the STREAM benchmark suite:
 - Bytes per element: 4 × element size (three reads, one write) per element
 - Used to assess ALU performance
 
+### SSD I/O Benchmark
+- Operation: Sequential and random read/write tests for storage devices
+- Memory access pattern: File I/O with configurable block sizes (1kB-4kB)
+- Metrics measured:
+  - Bandwidth (MB/s)
+  - IOPS (I/O Operations Per Second)
+  - Latency (microseconds per I/O operation)
+- Modes:
+  - Sequential Write: Measures sequential write throughput
+  - Sequential Read: Measures sequential read throughput
+  - Random Write: Measures random write IOPS and throughput
+  - Random Read: Measures random read IOPS and throughput
+- Used to assess storage device performance for AI/ML workloads
+
 
 ## Configuration Options
 The benchmark accepts the following command-line options:
@@ -52,7 +66,17 @@ The benchmark accepts the following command-line options:
 - Requires compiler support for SIMD instructions
 - When disabled, uses scalar implementations
 
+### SSD I/O Benchmark (`-I`, `--ssd`)
+- Enables SSD I/O benchmarking
+- Additional options:
+  - `--ssd-path <path>`: Directory for test files (default: /tmp)
+  - `--ssd-block <size>`: Block size in bytes (default: 4096, range: 1024-4096)
+  - `--ssd-random`: Enable random I/O instead of sequential
+  - `--ssd-read-only`: Read-only test (requires pre-existing data)
+
 ## Output Format
+
+### Memory Bandwidth Benchmark
 The benchmark produces tabular, CSV-friendly output with the following format:
 
 ```
@@ -64,6 +88,27 @@ RandomRW <bytes>     <time>    <bandwidth>
 ALU      <bytes>     <time>    <bandwidth>
 ```
 
+### SSD I/O Benchmark
+The SSD benchmark produces the following output:
+
+```
+# SSD I/O Benchmark
+# Path: <path>, Block Size: <bytes> bytes, Random I/O: <yes|no>
+
+Benchmark     Bandwidth(MB/s)    IOPS      Latency(us)
+SequentialWrite <bw>    <iops>    <latency>
+SequentialRead  <bw>    <iops>    <latency>
+RandomRead      <bw>    <iops>    <latency>
+RandomWrite     <bw>    <iops>    <latency>
+```
+
+Where:
+- `<path>` is the benchmark directory
+- `<bytes>` is the block size
+- `<bw>` is the bandwidth in MB/s
+- `<iops>` is the I/O operations per second
+- `<latency>` is the average latency in microseconds
+
 Where:
 - `<size>` is the array size in MiB
 - `<type>` is the data type (float or double)
@@ -73,6 +118,8 @@ Where:
 - `<bandwidth>` is the calculated bandwidth in GB/s
 
 ## Bandwidth Calculation
+
+### Memory Bandwidth
 Bandwidth is calculated using the formula:
 ```
 bandwidth(GB/s) = (bytes_per_iteration) / (time_in_seconds) / 1e9
@@ -85,6 +132,16 @@ Where bytes_per_iteration depends on the kernel:
 - ALU: 4 × array_size_in_bytes
 - GPU Copy: 2 × array_size_in_bytes (host to device and device to host)
 
+### SSD I/O Metrics
+- **Bandwidth (MB/s)**: `(total_bytes / 1024²) / duration_seconds`
+- **IOPS**: `num_blocks / duration_seconds`
+- **Latency (µs)**: `(duration_seconds / num_blocks) × 10⁶`
+
+Where:
+- `total_bytes` = block_size × num_blocks
+- `duration_seconds` is the measured time for all I/O operations
+- `num_blocks` is the number of blocks processed
+
 ## Implementation Requirements
 1. Must be written in C++17
 2. Must use only the C++ standard library
@@ -94,3 +151,7 @@ Where bytes_per_iteration depends on the kernel:
 6. Must support configurable array size, iterations, and data type
 7. Must optionally support SIMD vectorization
 8. Must produce the specified output format
+9. Must support SSD I/O benchmarking (sequential/random read/write)
+10. Must support configurable block sizes (1kB-4kB)
+11. Must report bandwidth, IOPS, and latency for SSD tests
+12. Must be cross-platform compatible (Linux, macOS, Windows)
