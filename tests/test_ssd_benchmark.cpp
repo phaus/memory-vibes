@@ -147,7 +147,7 @@ void TestCleanup() {
     
     // File should be cleaned up
     std::string file_path = config.path + "/mem_band_ssd_test";
-    ASSERT_FALSE(fs::exists(file_path.c_str()));
+    ASSERT_FALSE(fs::exists(file_path));
 }
 
 // Test with different block sizes
