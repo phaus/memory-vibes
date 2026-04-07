@@ -14,7 +14,7 @@ SystemIdentifier SystemInfo::collect() {
     id.platform = detect_platform();
     id.simd_enabled = true;
     id.benchmark_version = "1.0.0";
-    std::cout << "COLLECT TEST\n"; std::cout << "COLLECT TEST\n"; std::cout.flush(); return id;
+    return id;
 }
 
 void SystemInfo::print() {

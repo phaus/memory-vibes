@@ -8,6 +8,10 @@
 #include <fstream>
 #include <vector>
 #include <cstdio>
+/// macOS sysctl support
+#if defined(__APPLE__)
+#include <sys/sysctl.h>
+#endif
 
 struct SystemIdentifier {
     std::string cpu_model;
