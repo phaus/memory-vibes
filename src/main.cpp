@@ -11,6 +11,7 @@
 
 #include "aligned_alloc.hpp"
 #include "benchmark.hpp"
+#include "ssd_benchmark.hpp"
 
 using namespace mem_band;
 
@@ -20,6 +21,11 @@ struct Options {
     std::string type = "float";   // data type: float or double
     bool simd = false;              // placeholder – not implemented
     bool alu = false;               // Run ALU-intensive kernel
+    bool ssd = false;               // Run SSD I/O benchmark
+    std::string ssd_path = "/tmp"; // SSD benchmark path
+    std::size_t ssd_block_size = 4096; // SSD block size in bytes
+    bool ssd_random = false;      // Random I/O vs sequential
+    bool ssd_read_only = false;   // Read-only SSD benchmark
 };
 
 void print_usage(const char* prog) {
@@ -30,6 +36,11 @@ void print_usage(const char* prog) {
               << "  -t, --type <float|double> Data type (default: float)\n"
               << "  -S, --simd             Enable SIMD (not implemented)\n"
               << "  -A, --alu              Run ALU-intensive kernel (multiply-add-multiply-add)\n"
+              << "  -I, --ssd              Run SSD I/O benchmark\n"
+              << "  --ssd-path <path>      SSD benchmark directory (default: /tmp)\n"
+              << "  --ssd-block <size>     SSD block size in bytes (default: 4096)\n"
+              << "  --ssd-random           Random I/O vs sequential\n"
+              << "  --ssd-read-only        Read-only SSD benchmark\n"
               << "  -h, --help             Show this help message\n";
 }
 
@@ -59,6 +70,23 @@ bool parse_args(int argc, char* argv[], Options& opts) {
         }
         else if (a == "-A" || a == "--alu") {
             opts.alu = true;
+        }
+        else if (a == "-I" || a == "--ssd") {
+            opts.ssd = true;
+        }
+        else if (a == "--ssd-path") {
+            if (i + 1 >= args.size()) { std::cerr << "Missing value for " << a << "\n"; return false; }
+            opts.ssd_path = args[++i];
+        }
+        else if (a == "--ssd-block") {
+            if (i + 1 >= args.size()) { std::cerr << "Missing value for " << a << "\n"; return false; }
+            opts.ssd_block_size = std::stoul(args[++i]);
+        }
+        else if (a == "--ssd-random") {
+            opts.ssd_random = true;
+        }
+        else if (a == "--ssd-read-only") {
+            opts.ssd_read_only = true;
         }
         else {
             std::cerr << "Unknown option: " << a << "\n";
@@ -202,10 +230,37 @@ void run_benchmark(const Options& opts) {
     aligned_free(c);
 }
 
+// Run SSD benchmark
+void run_ssd_benchmark(const Options& opts) {
+    mem_band::SSDConfig config{};
+    config.path = opts.ssd_path;
+    config.block_size = opts.ssd_block_size;
+    config.num_blocks = 100; // Fixed for now
+    config.sequential = !opts.ssd_random;
+    config.read_only = opts.ssd_read_only;
+    
+    std::cout << "# SSD I/O Benchmark\n";
+    std::cout << "# Path: " << opts.ssd_path << ", Block Size: " << opts.ssd_block_size 
+              << " bytes, Random I/O: " << (opts.ssd_random ? "yes" : "no") << "\n\n";
+    
+    auto result = mem_band::run_ssd_benchmark(config);
+    
+    std::cout << "Benchmark     Bandwidth(MB/s)    IOPS      Latency(us)\n";
+    
+    std::string iotype = opts.ssd_random ? (opts.ssd_read_only ? "RandomRead" : "ReadWrite") 
+                                          : (opts.ssd_read_only ? "SequentialRead" : "SequentialWrite");
+    std::cout << iotype << "     " << result.bandwidth_mbps << "    " << result.iops << "    " << result.latency_us << "\n";
+}
+
 int main(int argc, char* argv[]) {
     Options opts;
     if (!parse_args(argc, argv, opts)) {
         return EXIT_FAILURE;
+    }
+
+    if (opts.ssd) {
+        run_ssd_benchmark(opts);
+        return EXIT_SUCCESS;
     }
 
     if (opts.type == "float") {
