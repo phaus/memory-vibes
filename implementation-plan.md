@@ -52,10 +52,11 @@
 - [x] Implement ALU intensive kernels (Integer/FP stress)
 - [x] Implement SSD I/O tests (Sequential/Random, 1kB-4kB blocks)
 - [x] Update `main.cpp` and documentation for GPU/ALU/SSD flags
-- [ ] Add APU (AMD Strix Point/Halo) support for memory bandwidth benchmarking
+- [x] Add APU (AMD Strix Point/Halo) support for memory bandwidth benchmarking
 - [ ] Add NPU (Neural Processing Unit) benchmark tests
 
 ## Phase 9: Documentation
+- [x] Add APU system identifier collection to implementation plan
 - [ ] Complete `benchmark-spec.md` and `architecture-spec.md`
 - [ ] Update `README.md` with clear usage and Legacy Support sections
 - [ ] Define system identifier collection (CPU model, memory size/type) for benchmark runs

@@ -45,18 +45,24 @@ add_executable(test_double tests/test_double.cpp)
 add_executable(test_alignment tests/test_alignment.cpp)
 add_executable(test_alu tests/test_alu.cpp)
 add_executable(test_ssd tests/test_ssd_benchmark.cpp)
+add_executable(test_apu_identifier tests/test_apu_identifier.cpp)
 
 target_include_directories(test_benchmark PRIVATE src)
 target_include_directories(test_double PRIVATE src)
 target_include_directories(test_alignment PRIVATE src)
 target_include_directories(test_alu PRIVATE src)
 target_include_directories(test_ssd PRIVATE src)
+target_include_directories(test_apu_identifier PRIVATE src)
+
+# Link c library for sysconf on some platforms
+target_link_libraries(test_apu_identifier PRIVATE c)
 
 add_test(NAME BenchmarkUnitTest COMMAND test_benchmark)
 add_test(NAME DoubleUnitTest COMMAND test_double)
 add_test(NAME AlignmentUnitTest COMMAND test_alignment)
 add_test(NAME ALUUnitTest COMMAND test_alu)
 add_test(NAME SSDUnitTest COMMAND test_ssd)
+add_test(NAME APUIdentifierTest COMMAND test_apu_identifier)
 add_test(NAME MemBandBasicRun COMMAND mem_band --size 8 --iters 1 --type float)
 add_test(NAME SSDSequentialWrite COMMAND test_ssd)
 # Long-running test (1024 MiB) to stress cache
