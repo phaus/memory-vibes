@@ -35,6 +35,9 @@
 - [x] Install required dependencies in CI jobs (CMake, compilers)
 - [x] Run unit tests (`ctest`) in CI and verify execution
 - [x] Add status badge to README.md
+- [x] Add shell script aliases for test execution
+  - `./scripts/run_all_tests.sh` - runs complete test suite (all tests)
+  - `./scripts/run_medium_tests.sh` - runs default/medium test subset
 
 ## Phase 6: Testing & Validation
 - [x] Build and test on Linux/macOS/Windows
