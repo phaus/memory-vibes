@@ -56,7 +56,7 @@ void TestSequentialRead() {
     
     // Now read it back
     mem_band::SSDConfig read_config{};
-    read_config.path = test_dir;
+    read_config.path = test_dir_path.string();
     read_config.block_size = 4096;
     read_config.num_blocks = 100;
     read_config.sequential = true;
@@ -84,7 +84,7 @@ void TestRandomRead() {
     
     // Now read randomly
     mem_band::SSDConfig read_config{};
-    read_config.path = test_dir;
+    read_config.path = test_dir_path.string();
     read_config.block_size = 4096;
     read_config.num_blocks = 100;
     read_config.sequential = false;
