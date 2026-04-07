@@ -21,11 +21,11 @@ namespace fs = std::filesystem;
 
 // Test sequential write benchmark
 void TestSequentialWrite() {
-    std::string test_dir = fs::temp_directory_path() / "mem_band_ssd_test";
-    fs::create_directories(test_dir);
+    fs::path test_dir_path = fs::temp_directory_path() / "mem_band_ssd_test";
+    fs::create_directories(test_dir_path);
     
     mem_band::SSDConfig config{};
-    config.path = test_dir;
+    config.path = test_dir_path.string();
     config.block_size = 4096;  // 4KB block
     config.num_blocks = 100;
     config.sequential = true;
@@ -97,11 +97,11 @@ void TestRandomRead() {
 
 // Test with small blocks (1KB)
 void TestSmallBlocks() {
-    std::string test_dir = fs::temp_directory_path() / "mem_band_ssd_test";
-    fs::create_directories(test_dir);
+    fs::path test_dir_path = fs::temp_directory_path() / "mem_band_ssd_test";
+    fs::create_directories(test_dir_path);
     
     mem_band::SSDConfig config{};
-    config.path = test_dir;
+    config.path = test_dir_path.string();
     config.block_size = 1024;   // 1KB block
     config.num_blocks = 200;
     config.sequential = true;
@@ -115,11 +115,11 @@ void TestSmallBlocks() {
 
 // Test with large blocks (4KB)
 void TestLargeBlocks() {
-    std::string test_dir = fs::temp_directory_path() / "mem_band_ssd_test";
-    fs::create_directories(test_dir);
+    fs::path test_dir_path = fs::temp_directory_path() / "mem_band_ssd_test";
+    fs::create_directories(test_dir_path);
     
     mem_band::SSDConfig config{};
-    config.path = test_dir;
+    config.path = test_dir_path.string();
     config.block_size = 4096;   // 4KB block
     config.num_blocks = 50;
     config.sequential = true;
@@ -133,11 +133,11 @@ void TestLargeBlocks() {
 
 // Test file cleanup
 void TestCleanup() {
-    std::string test_dir = fs::temp_directory_path() / "mem_band_ssd_test";
-    fs::create_directories(test_dir);
+    fs::path test_dir_path = fs::temp_directory_path() / "mem_band_ssd_test";
+    fs::create_directories(test_dir_path);
     
     mem_band::SSDConfig config{};
-    config.path = test_dir;
+    config.path = test_dir_path.string();
     config.block_size = 4096;
     config.num_blocks = 10;
     config.sequential = true;
@@ -147,7 +147,7 @@ void TestCleanup() {
     
     // File should be cleaned up
     std::string file_path = config.path + "/mem_band_ssd_test";
-    ASSERT_FALSE(fs::exists(file_path));
+    ASSERT_FALSE(fs::exists(file_path.c_str()));
 }
 
 // Test with different block sizes
@@ -178,11 +178,11 @@ void TestVaryingBlockSizes() {
 
 // Test IOPS calculation
 void TestIOPS() {
-    std::string test_dir = fs::temp_directory_path() / "mem_band_ssd_test";
-    fs::create_directories(test_dir);
+    fs::path test_dir_path = fs::temp_directory_path() / "mem_band_ssd_test";
+    fs::create_directories(test_dir_path);
     
     mem_band::SSDConfig config{};
-    config.path = test_dir;
+    config.path = test_dir_path.string();
     config.block_size = 4096;
     config.num_blocks = 100;
     config.sequential = true;
@@ -196,11 +196,11 @@ void TestIOPS() {
 
 // Test latency calculation
 void TestLatency() {
-    std::string test_dir = fs::temp_directory_path() / "mem_band_ssd_test";
-    fs::create_directories(test_dir);
+    fs::path test_dir_path = fs::temp_directory_path() / "mem_band_ssd_test";
+    fs::create_directories(test_dir_path);
     
     mem_band::SSDConfig config{};
-    config.path = test_dir;
+    config.path = test_dir_path.string();
     config.block_size = 4096;
     config.num_blocks = 50;
     config.sequential = true;

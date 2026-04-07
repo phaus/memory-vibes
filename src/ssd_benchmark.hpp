@@ -243,7 +243,7 @@ inline SSDResult random_read_benchmark(const std::string& file_path, std::size_t
 
 // Test file cleanup
 inline void cleanup_ssd_test_file(const std::string& file_path) {
-    std::remove(file_path.c_str());
+    std::remove(file_path.c_str());  // Works on Linux and Windows
 }
 
 // Run SSD benchmark
