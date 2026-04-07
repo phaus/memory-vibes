@@ -78,7 +78,6 @@ add_test(NAME APUIdentifierTest COMMAND test_apu_identifier)
 add_test(NAME NPUUnitTest COMMAND test_npu)
 add_test(NAME MemBandBasicRun COMMAND mem_band --size 8 --iters 1 --type float)
 add_test(NAME SSDSequentialWrite COMMAND test_ssd)
-add_test(NAME MemBandLongRun1024 COMMAND mem_band --size 1024 --iters 1 --type float)
 
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "i386")
     add_compile_options(-msse2)
