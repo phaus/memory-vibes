@@ -53,7 +53,7 @@
 - [x] Implement SSD I/O tests (Sequential/Random, 1kB-4kB blocks)
 - [x] Update `main.cpp` and documentation for GPU/ALU/SSD flags
 - [x] Add APU (AMD Strix Point/Halo) support for memory bandwidth benchmarking
-- [ ] Add NPU (Neural Processing Unit) benchmark tests
+- [x] Add NPU (Neural Processing Unit) benchmark tests
 
 ## Phase 9: Documentation
 - [x] Add APU system identifier collection to implementation plan
