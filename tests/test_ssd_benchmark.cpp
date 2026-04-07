@@ -41,12 +41,12 @@ void TestSequentialWrite() {
 
 // Test sequential read benchmark (with pre-existing data)
 void TestSequentialRead() {
-    std::string test_dir = fs::temp_directory_path() / "mem_band_ssd_test";
-    fs::create_directories(test_dir);
+    fs::path test_dir_path = fs::temp_directory_path() / "mem_band_ssd_test";
+    fs::create_directories(test_dir_path);
     
     // First create data
     mem_band::SSDConfig create_config{};
-    create_config.path = test_dir;
+    create_config.path = test_dir_path.string();
     create_config.block_size = 4096;
     create_config.num_blocks = 100;
     create_config.sequential = true;
@@ -69,12 +69,12 @@ void TestSequentialRead() {
 
 // Test random read benchmark
 void TestRandomRead() {
-    std::string test_dir = fs::temp_directory_path() / "mem_band_ssd_test";
-    fs::create_directories(test_dir);
+    fs::path test_dir_path = fs::temp_directory_path() / "mem_band_ssd_test";
+    fs::create_directories(test_dir_path);
     
     // First create data
     mem_band::SSDConfig create_config{};
-    create_config.path = test_dir;
+    create_config.path = test_dir_path.string();
     create_config.block_size = 4096;
     create_config.num_blocks = 100;
     create_config.sequential = true;
