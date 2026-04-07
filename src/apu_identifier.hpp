@@ -63,6 +63,27 @@ static std::vector<std::string> read_file_lines(const std::string& filepath) {
  * @return CPU model string
  */
 static std::string get_cpu_model() {
+#ifdef __aarch64__
+    std::ifstream cpuinfo("/proc/cpuinfo");
+    std::string line, cpu_part;
+    while (std::getline(cpuinfo, line)) {
+        if (line.find("CPU part") != std::string::npos) {
+            size_t pos = line.find(':');
+            if (pos != std::string::npos) {
+                cpu_part = line.substr(pos + 1);
+                cpu_part.erase(0, cpu_part.find_first_not_of(" \t"));
+                cpu_part.erase(cpu_part.find_last_not_of(" \t\r\n") + 1);
+                break;
+            }
+        }
+    }
+    cpuinfo.close();
+    if (!cpu_part.empty()) {
+        return "ARM AARCH64 CPU (part: " + cpu_part + ")";
+    }
+    return "ARM AARCH64 CPU";
+#endif
+
     std::string cpu_model = "<unknown>";
     
 #if defined(__linux__)
@@ -191,7 +212,14 @@ static std::string detect_apu_platform(const std::string& cpu_model) {
         return "AMD APU";
     }
     
-    return "<unknown>";
+    // Check preprocessor defines for platform
+#if defined(__aarch64__)
+    return "aarch64-linux";
+#elif defined(__x86_64__)
+    return "x86_64-linux";
+#else
+    return "unknown-platform";
+#endif
 }
 
 /**

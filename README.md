@@ -227,3 +227,34 @@ Runs a default test subset excluding the 1024 MiB stress test.
 
 ## License
 This project is released under the **MIT License** – see the `LICENSE` file for details.
+
+## Legacy Platform Support
+
+The benchmark supports legacy platforms including PowerPC32/64 and i386 Linux:
+
+### Build on Legacy Platforms
+
+**PowerPC32 (e.g., embedded PowerPC):**
+```bash
+cmake .. -DCMAKE_TOOLCHAIN_FILE=toolchain-ppc32.cmake
+```
+
+**PowerPC64 (e.g., IBM Power systems):**
+```bash
+cmake .. -DCMAKE_TOOLCHAIN_FILE=toolchain-ppc64.cmake
+```
+
+**i386 (32-bit x86):**
+```bash
+cmake .. -DCMAKE_TOOLCHAIN_FILE=toolchain-i386.cmake
+```
+
+### Fallback Mechanisms
+
+- **Aligned Allocation**: Uses `posix_memalign` as fallback on platforms without `_align_malloc` or `aligned_alloc`
+- **SIMD Instructions**: Guarded by compiler-specific flags (`-maltivec` for PowerPC, `-msse2` for i386)
+- **C++17 Compliance**: Falls back to standard C++ features when platform-specific optimizations are unavailable
+
+### Platform Detection
+
+The build system automatically detects the target platform and applies appropriate compiler flags. See the respective toolchain files for platform-specific configurations.
