@@ -88,13 +88,17 @@ Options:
   -s, --size <MiB>       Size of each array (default: 256)
   -n, --iters <N>        Number of timed iterations per kernel (default: 20)
   -t, --type <float|double> Data type (default: float)
-  -S, --simd             Enable SIMD vectorised kernels (requires compiler support)
+  -S, --simd             Enable SIMD (not implemented)
   -A, --alu              Run ALU-intensive kernel
   -I, --ssd              Run SSD I/O benchmark
   --ssd-path <path>      SSD benchmark directory (default: /tmp)
   --ssd-block <size>     SSD block size in bytes (default: 4096)
   --ssd-random           Random I/O vs sequential
   --ssd-read-only        Read-only SSD benchmark
+  -R, --run-apu          Run APU system identifier collection
+  -N, --run-npu          Run NPU benchmark
+  --run-npu-suite        Run NPU benchmark suite (all precision/operation combinations)
+  -M, --run-medium-test  Run only default test subset (excludes 1024 MiB stress test)
   -h, --help             Show this help message
 ```
 ### Memory Bandwidth Benchmark Example
@@ -120,6 +124,54 @@ RandomRW 2.0e+09    0.34      0.41
 
 Benchmark     Bandwidth(MB/s)    IOPS      Latency(us)
 SequentialWrite  4.02e+07   1.03e+07  0.097
+```
+### APU System Identifier Example
+```bash
+./mem_band --run-apu
+```
+**Output:**
+```
+# System Information
+  CPU: AMD Ryzen AI 300 Series
+  Platform: AMD Ryzen AI Strix Point
+  Memory: 124546 MB
+  OS: Ubuntu 24.04.4 LTS
+```
+
+### NPU Benchmark Example
+```bash
+./mem_band --run-npu
+```
+**Output:**
+```
+# NPU Benchmark
+
+  Device: NPU 0
+  Configuration: MatMul FP32 (size=1024)
+  Metrics:
+    Latency:      109.952 ms
+    Throughput:   36954.5 OPS
+                (3.86375e-08 TFLOPS)
+    Power:        4.75633 W
+```
+
+### NPU Benchmark Suite Example
+```bash
+./mem_band --run-npu-suite
+```
+**Output:**
+```
+# Running NPU benchmark suite
+
+  Device: NPU 0
+  Configuration: MatMul FP32 (size=1024)
+  Metrics:
+    ...
+
+  Device: NPU 0
+  Configuration: MatMul FP16 (size=1024)
+  Metrics:
+    ...
 ```
 
 ## Interpreting Results
@@ -165,7 +217,13 @@ Runs 9 unit tests for SSD benchmark functionality. Or test manually:
 ```bash
 cd build && ctest --output-on-failure
 ```
-All 8 tests should pass (including SSD tests).
+All 10 tests should pass (including SSD tests).
+
+### Quick Run (Medium Test Subset)
+```bash
+./mem_band --run-medium-test
+```
+Runs a default test subset excluding the 1024 MiB stress test.
 
 ## License
 This project is released under the **MIT License** – see the `LICENSE` file for details.
