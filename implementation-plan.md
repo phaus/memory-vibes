@@ -35,9 +35,11 @@
 - [x] Install required dependencies in CI jobs (CMake, compilers)
 - [x] Run unit tests (`ctest`) in CI and verify execution
 - [x] Add status badge to README.md
-- [x] Add shell script aliases for test execution
-  - `./scripts/run_all_tests.sh` - runs complete test suite (all tests)
-  - `./scripts/run_medium_tests.sh` - runs default/medium test subset
+- [x] Add CLI parameters for running test suites
+  - `-R, --run-apu` - Run APU system identifier collection
+  - `-N, --run-npu` - Run NPU benchmark
+  - `--run-npu-suite` - Run NPU benchmark suite (all precision/operation combinations)
+  - `-M, --run-medium-test` - Run only default test subset (excludes 1024 MiB stress test)
 
 ## Phase 6: Testing & Validation
 - [x] Build and test on Linux/macOS/Windows

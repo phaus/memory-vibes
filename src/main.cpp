@@ -12,20 +12,26 @@
 #include "aligned_alloc.hpp"
 #include "benchmark.hpp"
 #include "ssd_benchmark.hpp"
+#include "apu_identifier.hpp"
+#include "npu_benchmark.hpp"
 
 using namespace mem_band;
 
 struct Options {
     std::size_t sizeMiB = 256;      // array size in MiB
     std::size_t iterations = 20;    // timed iterations per kernel
-    std::string type = "float";   // data type: float or double
+    std::string type = "float";     // data type: float or double
     bool simd = false;              // placeholder – not implemented
     bool alu = false;               // Run ALU-intensive kernel
     bool ssd = false;               // Run SSD I/O benchmark
-    std::string ssd_path = "/tmp"; // SSD benchmark path
+    std::string ssd_path = "/tmp";  // SSD benchmark path
     std::size_t ssd_block_size = 4096; // SSD block size in bytes
-    bool ssd_random = false;      // Random I/O vs sequential
-    bool ssd_read_only = false;   // Read-only SSD benchmark
+    bool ssd_random = false;        // Random I/O vs sequential
+    bool ssd_read_only = false;     // Read-only SSD benchmark
+    bool run_apu = false;           // Run APU system identifier collection
+    bool run_npu = false;           // Run NPU benchmark
+    bool run_npu_suite = false;     // Run NPU benchmark suite
+    bool run_medium_test = false;   // Run only medium test subset (default tests)
 };
 
 void print_usage(const char* prog) {
@@ -41,6 +47,10 @@ void print_usage(const char* prog) {
               << "  --ssd-block <size>     SSD block size in bytes (default: 4096)\n"
               << "  --ssd-random           Random I/O vs sequential\n"
               << "  --ssd-read-only        Read-only SSD benchmark\n"
+              << "  -R, --run-apu          Run APU system identifier collection\n"
+              << "  -N, --run-npu          Run NPU benchmark\n"
+              << "  --run-npu-suite        Run NPU benchmark suite (all precision/operation combinations)\n"
+              << "  -M, --run-medium-test  Run only default test subset (excludes 1024 MiB stress test)\n"
               << "  -h, --help             Show this help message\n";
 }
 
@@ -87,6 +97,18 @@ bool parse_args(int argc, char* argv[], Options& opts) {
         }
         else if (a == "--ssd-read-only") {
             opts.ssd_read_only = true;
+        }
+        else if (a == "-R" || a == "--run-apu") {
+            opts.run_apu = true;
+        }
+        else if (a == "-N" || a == "--run-npu") {
+            opts.run_npu = true;
+        }
+        else if (a == "--run-npu-suite") {
+            opts.run_npu_suite = true;
+        }
+        else if (a == "-M" || a == "--run-medium-test") {
+            opts.run_medium_test = true;
         }
         else {
             std::cerr << "Unknown option: " << a << "\n";
@@ -247,9 +269,33 @@ void run_ssd_benchmark(const Options& opts) {
     
     std::cout << "Benchmark     Bandwidth(MB/s)    IOPS      Latency(us)\n";
     
-    std::string iotype = opts.ssd_random ? (opts.ssd_read_only ? "RandomRead" : "ReadWrite") 
+    std::string iotype = opts.ssd_random ? (opts.ssd_read_only ? "RandomRead" : "RandomWrite") 
                                           : (opts.ssd_read_only ? "SequentialRead" : "SequentialWrite");
     std::cout << iotype << "     " << result.bandwidth_mbps << "    " << result.iops << "    " << result.latency_us << "\n";
+}
+
+// Run APU benchmark (system identifier)
+void run_apu_benchmark(const Options& opts) {
+    mem_band::APUSystemInfo info = mem_band::collect_apu_system_info();
+    mem_band::print_system_info(info);
+}
+
+// Run NPU benchmark
+void run_npu_benchmark(const Options& opts) {
+    mem_band::NPUConfig config;
+    
+    if (opts.run_npu_suite) {
+        std::cout << "# Running NPU benchmark suite\n\n";
+        auto results = mem_band::run_npu_benchmark_suite(config);
+        for (const auto& result : results) {
+            mem_band::print_npu_result(result, config);
+            std::cout << "\n";
+        }
+    } else {
+        std::cout << "# NPU Benchmark\n\n";
+        auto result = mem_band::mock_npu_benchmark(config);
+        mem_band::print_npu_result(result, config);
+    }
 }
 
 int main(int argc, char* argv[]) {
@@ -258,11 +304,36 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
+    // Run APU system identifier
+    if (opts.run_apu) {
+        run_apu_benchmark(opts);
+        return EXIT_SUCCESS;
+    }
+
+    // Run NPU benchmark
+    if (opts.run_npu || opts.run_npu_suite) {
+        run_npu_benchmark(opts);
+        return EXIT_SUCCESS;
+    }
+
+    // Run SSD benchmark
     if (opts.ssd) {
         run_ssd_benchmark(opts);
         return EXIT_SUCCESS;
     }
 
+    // Run medium test subset (modify iterations for quick test)
+    if (opts.run_medium_test) {
+        std::cout << "# Running medium test subset (excludes 1024 MiB stress test)\n";
+        if (opts.type == "float") {
+            run_benchmark<float>(opts);
+        } else {
+            run_benchmark<double>(opts);
+        }
+        return EXIT_SUCCESS;
+    }
+
+    // Default: run memory bandwidth benchmark
     if (opts.type == "float") {
         run_benchmark<float>(opts);
     } else {
