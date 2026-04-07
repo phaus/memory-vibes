@@ -35,6 +35,6 @@ jobs:
 
       - name: Run Tests
         run: |
-          ctest --output-on-failure -E MemBandLongRun1024
+          ctest --output-on-failure
         shell: bash
 
