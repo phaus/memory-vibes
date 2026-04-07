@@ -300,6 +300,10 @@ void run_npu_benchmark(const Options& opts) {
 
 int main(int argc, char* argv[]) {
     Options opts;
+    if (argc == 1) {
+        print_usage(argv[0]);
+        return EXIT_FAILURE;
+    }
     if (!parse_args(argc, argv, opts)) {
         return EXIT_FAILURE;
     }
