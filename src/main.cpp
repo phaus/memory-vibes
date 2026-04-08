@@ -273,7 +273,7 @@ void run_platform_detection() {
     std::cout << "System: " << info.cpu_vendor << " " << cpu_isa << "\n";
     std::cout << "Detected devices:\n";
     for (const auto& device : info.pci_devices) {
-        std::cout << "  " << device.vendor << " " << device.device << " (Class: " << device.class_id << ")\n";
+        std::cout << "  " << device.vendor << " " << device.device << " (Class: " << device.class_info << ")\n";
     }
 }
 

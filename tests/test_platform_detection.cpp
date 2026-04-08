@@ -1,6 +1,8 @@
 #include "platform_detection.hpp"
 #include <gtest/gtest.h>
 
+using namespace mem_band;
+
 class PlatformDetectionTest : public ::testing::Test {
 protected:
     void SetUp() override {}

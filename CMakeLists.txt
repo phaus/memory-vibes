@@ -178,7 +178,7 @@ if(BUILD_TESTING)
     target_link_libraries(test_platform_detection platform_detection_lib GTest::gtest_main)
     
     # APU identifier test - link gtest_main; on non-Windows also link libc
-    target_link_libraries(test_apu_identifier GTest::gtest_main)
+    target_link_libraries(test_apu_identifier PRIVATE GTest::gtest_main)
     if(NOT WIN32)
         target_link_libraries(test_apu_identifier PRIVATE c)
     endif()

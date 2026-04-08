@@ -5,6 +5,8 @@
 #include <vector>
 #include <utility>
 
+namespace mem_band {
+
 struct HardwareDeviceInfo {
     std::string vendor;
     std::string device;
@@ -51,5 +53,7 @@ private:
 
     static HardwareDeviceInfo parse_device_info(const std::string& line);
 };
+
+} // namespace mem_band
 
 #endif // PLATFORM_DETECTION_HPP

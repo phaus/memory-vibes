@@ -17,6 +17,8 @@
 #include <sys/sysctl.h>
 #endif
 
+namespace mem_band {
+
 std::string PlatformDetection::get_cpu_isa() {
 #if defined(__AVX2__)
     return "AVX2";
@@ -199,3 +201,5 @@ HardwareDeviceInfo PlatformDetection::parse_device_info(const std::string& line)
     HardwareDeviceInfo device;
     return device;
 }
+
+} // namespace mem_band
