@@ -1,10 +1,11 @@
 # Memory Bandwidth Benchmark
 
-![Generated with local AI](https://img.shields.io/badge/Generated%20with%20local%20AI-blue) ![Hardware](https://img.shields.io/badge/Hardware-NVIDIA%20DGX%20Spark%20GB10-blue) ![Model](https://img.shields.io/badge/Model-nemotron--3--super%3A120b-blue) ![CI Build Status](https://img.shields.io/github/actions/workflow/status/phaus/memory-vibes/ci.yml?branch=main&logo=github-actions)
+![Generated with local AI](https://img.shields.io/badge/Generated%20with%20local%20AI-blue) ![Hardware](https://img.shields.io/badge/Hardware-NVIDIA%20DGX%20Spark%20GB10-blue) ![Model](https://img.shields.io/badge/Model-Qwen--Qwen3--5--35B--FP8-blue) ![CI Build Status](https://img.shields.io/github/actions/workflow/status/phaus/memory-vibes/ci.yml?branch=main&logo=github-actions)
 
 A tiny, portable utility that measures sustainable memory bandwidth on Linux, macOS, and Windows.
 
 📄 **Detailed benchmark specification:** [specs/benchmark-spec.md](./specs/benchmark-spec.md)
+📄 **System identifier & persistence spec:** [specs/system-identifier-spec.md](./specs/system-identifier-spec.md)
 
 ## Overview
 The program implements the following benchmarks:
@@ -18,7 +19,12 @@ The program implements the following benchmarks:
 **SSD I/O Benchmarks:**
 - **Sequential Read/Write**: Measures sustained sequential throughput
 - **Random Read/Write**: Measures IOPS and latency for random access
-- Configurable block sizes (1kB-4kB) for different workload simulations
+- **Configurable** block sizes (1kB-4kB) for different workload simulations
+
+**APU/NPU Benchmarking:**
+- **APU System Identifier**: Collects hardware/system information for benchmark tracking
+- **NPU Benchmark**: Neural Processing Unit performance testing (FP32/FP16, MatMul/Conv2D)
+- **NPU Suite**: Full benchmark suite across all precision/operation combinations
 
 All benchmarks are written in **C++17**, use only the C++ standard library, and are built with **CMake** for Linux, macOS, and Windows.
 
@@ -30,38 +36,32 @@ mem_band/
 ├─ implementation-plan.md # High‑level implementation tasks
 ├─ specs/                  # Specification documents (markdown)
 │   ├─ benchmark-spec.md   # Detailed benchmark description
-│   └─ architecture-spec.md# Architecture considerations
+│   ├─ architecture-spec.md# Architecture considerations
+│   ├─ stream-spec.md      # STREAM benchmark reference
+│   └─ system-identifier-spec.md # System ID & CSV persistence spec
 ├─ src/
 │   ├─ main.cpp            # CLI, orchestration
-│   ├─ benchmark.hpp       # Memory kernel implementations
+│   ├─ benchmark.hpp       # Templated kernel implementations
+│   ├─ aligned_alloc.hpp   # Portable aligned allocation helpers
 │   ├─ ssd_benchmark.hpp   # SSD I/O benchmark implementations
-│   └─ aligned_alloc.hpp   # Portable aligned allocation helpers
+│   ├─ apu_identifier.hpp  # APU system identifier collection
+│   ├─ npu_benchmark.hpp   # NPU benchmark implementations
+│   ├─ system_info.hpp     # System information utilities
+│   ├─ csv_output.hpp      # CSV output handling
+│   └─ gpu_benchmark.hpp   # GPU benchmark utilities
 └─ tests/                  # Unit tests
     ├─ test_benchmark.cpp  # Basic kernel tests
     ├─ test_double.cpp     # Double precision tests
     ├─ test_alignment.cpp  # Alignment tests
     ├─ test_alu.cpp        # ALU kernel tests
-    └─ test_ssd_benchmark.cpp  # SSD I/O benchmark tests
-``` 
+    ├─ test_ssd_benchmark.cpp  # SSD I/O benchmark tests
+    ├─ test_apu_identifier.cpp  # APU system identifier tests
+    └─ test_npu.cpp        # NPU benchmark unit tests
 ```
-mem_band/
-├─ CMakeLists.txt          # CMake build script
-├─ README.md               # This file
-├─ implementation-plan.md # High‑level implementation tasks
-├─ specs/                  # Specification documents (markdown)
-│   ├─ benchmark-spec.md   # Detailed benchmark description
-│   └─ architecture-spec.md# Architecture considerations
-├─ src/
-│   ├─ main.cpp            # CLI, orchestration
-│   ├─ benchmark.hpp       # Templated kernel implementations
-│   └─ aligned_alloc.hpp   # Portable aligned allocation helpers
-└─ scripts/                # Optional helper scripts (e.g., run_all.sh)
-    └─ run_all.sh          # Example wrapper that runs several sizes
-``` 
 
 ## Build Instructions
 ### Prerequisites
-- **CMake** ≥ 3.15
+- **CMake** ≥ 3.15
 - A C++ compiler supporting C++17 (gcc, clang, MSVC)
 
 ### Linux / macOS
@@ -101,6 +101,7 @@ Options:
   -M, --run-medium-test  Run only default test subset (excludes 1024 MiB stress test)
   -h, --help             Show this help message
 ```
+
 ### Memory Bandwidth Benchmark Example
 ```bash
 ./mem_band --size 1024 --iters 30 --type double
@@ -113,6 +114,21 @@ Copy     2.0e+09    0.62      3.23
 Triad    3.0e+09    0.93      3.23
 RandomRW 2.0e+09    0.34      0.41
 ```
+
+### ALU-Intensive Kernel Example
+```bash
+./mem_band --size 1024 --iters 30 --alu
+```
+**Output:**
+```
+# Size: 1024 MiB, Type: float, Iterations: 30
+Kernel   Bytes/Iter  Time(s)   Bandwidth(GB/s)
+Copy     2097152000    0.62      3.23
+Triad    3145728000    0.93      3.23
+RandomRW 2097152000    0.34      0.41
+ALU      4194304000    0.15      2.80
+```
+
 ### SSD I/O Benchmark Example
 ```bash
 ./mem_band --ssd --ssd-path /tmp --ssd-block 4096
@@ -125,6 +141,20 @@ RandomRW 2.0e+09    0.34      0.41
 Benchmark     Bandwidth(MB/s)    IOPS      Latency(us)
 SequentialWrite  4.02e+07   1.03e+07  0.097
 ```
+
+### Random SSD I/O Example
+```bash
+./mem_band --ssd --ssd-path /tmp --ssd-block 4096 --ssd-random
+```
+**Output:**
+```
+# SSD I/O Benchmark
+# Path: /tmp, Block Size: 4096 bytes, Random I/O: yes
+
+Benchmark     Bandwidth(MB/s)    IOPS      Latency(us)
+RandomRead      2.15e+05   5.56e+04  17.85
+```
+
 ### APU System Identifier Example
 ```bash
 ./mem_band --run-apu
@@ -190,6 +220,11 @@ SequentialWrite  4.02e+07   1.03e+07  0.097
 - Lower latency values indicate faster response times.
 - Compare results across storage types (HDD vs SSD vs NVMe) to understand storage bottlenecks.
 
+### NPU Performance
+- **Latency**: Lower is better for inference tasks
+- **Throughput**: Higher OPS (operations per second) indicates better performance
+- **Power**: Lower power consumption for same throughput indicates efficiency
+
 ## Extending the Benchmark
 - Add multi‑threaded kernels (OpenMP / `std::thread`).
 - Implement additional STREAM kernels (Scale, Add).
@@ -213,11 +248,23 @@ Runs 9 unit tests for SSD benchmark functionality. Or test manually:
 ./mem_band --ssd --ssd-path /tmp --ssd-block 4096
 ```
 
+### APU System Identifier Tests
+```bash
+./build/test_apu_identifier
+```
+Runs APU system identifier tests across platforms.
+
+### NPU Benchmark Tests
+```bash
+./build/test_npu
+```
+Runs NPU benchmark unit tests.
+
 ### Full Test Suite
 ```bash
 cd build && ctest --output-on-failure
 ```
-All 10 tests should pass (including SSD tests).
+All tests should pass (including SSD, APU, and NPU tests).
 
 ### Quick Run (Medium Test Subset)
 ```bash
