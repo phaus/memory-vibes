@@ -78,7 +78,11 @@ endif()
 # Core Executable (No External Dependencies)
 # ============================================================================
 
+add_library(platform_detection_lib STATIC src/platform_detection.cpp)
+target_include_directories(platform_detection_lib PRIVATE src)
+
 add_executable(mem_band src/main.cpp src/system_info.cpp src/csv_output.cpp)
+target_link_libraries(mem_band PRIVATE platform_detection_lib)
 
 # SIMD support (optional, disabled by default)
 if(ENABLE_SIMD)
@@ -151,6 +155,7 @@ if(BUILD_TESTING)
     add_executable(test_ssd tests/test_ssd_benchmark.cpp)
     add_executable(test_apu_identifier tests/test_apu_identifier.cpp)
     add_executable(test_npu tests/test_npu.cpp)
+    add_executable(test_platform_detection tests/test_platform_detection.cpp)
 
     target_include_directories(test_benchmark PRIVATE src)
     target_include_directories(test_double PRIVATE src)
@@ -159,6 +164,7 @@ if(BUILD_TESTING)
     target_include_directories(test_ssd PRIVATE src)
     target_include_directories(test_apu_identifier PRIVATE src)
     target_include_directories(test_npu PRIVATE src)
+    target_include_directories(test_platform_detection PRIVATE src)
 
     # Link all tests with GoogleTest
     target_link_libraries(test_benchmark GTest::gtest_main)
@@ -166,7 +172,9 @@ if(BUILD_TESTING)
     target_link_libraries(test_alignment GTest::gtest_main)
     target_link_libraries(test_alu GTest::gtest_main)
     target_link_libraries(test_ssd GTest::gtest_main)
+    target_link_libraries(test_apu_identifier PRIVATE c)
     target_link_libraries(test_npu GTest::gtest_main)
+    target_link_libraries(test_platform_detection platform_detection_lib GTest::gtest_main)
     
     # APU identifier test needs special handling for Windows
     if(NOT WIN32)
@@ -196,6 +204,7 @@ if(BUILD_TESTING)
     add_test(NAME SSDUnitTest COMMAND test_ssd)
     add_test(NAME APUIdentifierTest COMMAND test_apu_identifier)
     add_test(NAME NPUUnitTest COMMAND test_npu)
+    add_test(NAME PlatformDetectionTest COMMAND test_platform_detection)
     add_test(NAME MemBandBasicRun COMMAND mem_band --size 8 --iters 1 --type float)
     add_test(NAME SSDSequentialWrite COMMAND test_ssd)
     

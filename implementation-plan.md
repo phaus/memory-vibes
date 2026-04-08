@@ -79,21 +79,21 @@
 ## Phase 10: Platform Detection (NEW)
 ### Platform & Hardware Inventory Detection
 - [x] Updated specs/architecture-spec.md with platform detection logic
-- [ ] Implement runtime platform detection in src/platform_detection.hpp
+- [x] Implement runtime platform detection in src/platform_detection.hpp
   - Three-level detection architecture:
     1. Compile-time: CPU ISA determination via compiler macros
     2. CPU-level (Runtime): Manufacturer detection via CPUID or system files
     3. PCIe-level (Runtime): Hardware enumeration via `/sys/` filesystem
-- [ ] Implement hardware vendor detection
+- [x] Implement hardware vendor detection
   - AMD GPU/NPU detection (PCIe vendor ID 0x1002)
   - NVIDIA GPU detection (PCIe vendor ID 0x10de)
   - Intel GPU/iGPU detection (PCIe vendor ID 0x8086)
   - ARM vendor detection (PCIe vendor ID 0x13b5)
-- [ ] Add PCIe scan functionality
+- [x] Add PCIe scan functionality
   - Scan `/sys/bus/pci/devices` for accelerators
   - Filter Display/3D controllers (Class 03xxxx)
   - Extract vendor, device, and class IDs
-- [ ] Create platform-specific detection implementations
+- [x] Create platform-specific detection implementations
   - Linux: `/sys` filesystem scanning
   - Windows: WMI (Windows Management Instrumentation) queries
   - macOS: CoreFoundation and sysctl calls
