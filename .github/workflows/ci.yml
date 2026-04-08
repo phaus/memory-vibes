@@ -27,6 +27,11 @@ jobs:
         with:
           cmake-version: '3.22.0'
 
+      - name: Set CMake timeouts
+        run: |
+          echo "CMAKE_FETCH_TIMEOUT=600" >> $GITHUB_ENV
+          echo "CMAKE_DOWNLOAD_TIMEOUT=600" >> $GITHUB_ENV
+
       - name: Configure and Build
         run: |
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
