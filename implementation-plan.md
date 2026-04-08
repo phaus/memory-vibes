@@ -40,6 +40,12 @@
   - `-N, --run-npu` - Run NPU benchmark
   - `--run-npu-suite` - Run NPU benchmark suite (all precision/operation combinations)
   - `-M, --run-medium-test` - Run only default test subset (excludes 1024 MiB stress test)
+- [x] Migrate build system from bash scripts to comprehensive Makefile
+  - Removed build.sh script
+  - Added full Makefile with build, test, lint, benchmark targets
+  - Supports debug/release/simd build modes
+  - Includes dedicated targets for APU/NPU benchmarks
+  - Provides custom benchmark configuration (SIZE=, ITERS=, TYPE=)
 
 ## Phase 6: Testing & Validation
 - [x] Build and test on Linux/macOS/Windows
