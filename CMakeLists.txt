@@ -172,15 +172,13 @@ if(BUILD_TESTING)
     target_link_libraries(test_alignment GTest::gtest_main)
     target_link_libraries(test_alu GTest::gtest_main)
     target_link_libraries(test_ssd GTest::gtest_main)
-    target_link_libraries(test_apu_identifier PRIVATE c)
     target_link_libraries(test_npu GTest::gtest_main)
     target_link_libraries(test_platform_detection platform_detection_lib GTest::gtest_main)
     
-    # APU identifier test needs special handling for Windows
+    # APU identifier test - link gtest_main; on non-Windows also link libc
+    target_link_libraries(test_apu_identifier GTest::gtest_main)
     if(NOT WIN32)
         target_link_libraries(test_apu_identifier PRIVATE c)
-    else()
-        target_link_libraries(test_apu_identifier GTest::gtest_main)
     endif()
 
     # Optional GPU tests (only if CUDA/ROCm available)
