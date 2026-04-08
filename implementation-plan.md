@@ -75,3 +75,39 @@
   - Created CSV persistence mechanism in src/csv_output.hpp/cpp
   - Added CSVOutput class to append results to files
   - CSV format includes timestamp, system_id, kernel, size, type, bandwidth, latency
+
+## Phase 10: Platform Detection (NEW)
+### Platform & Hardware Inventory Detection
+- [x] Updated specs/architecture-spec.md with platform detection logic
+- [ ] Implement runtime platform detection in src/platform_detection.hpp
+  - Three-level detection architecture:
+    1. Compile-time: CPU ISA determination via compiler macros
+    2. CPU-level (Runtime): Manufacturer detection via CPUID or system files
+    3. PCIe-level (Runtime): Hardware enumeration via `/sys/` filesystem
+- [ ] Implement hardware vendor detection
+  - AMD GPU/NPU detection (PCIe vendor ID 0x1002)
+  - NVIDIA GPU detection (PCIe vendor ID 0x10de)
+  - Intel GPU/iGPU detection (PCIe vendor ID 0x8086)
+  - ARM vendor detection (PCIe vendor ID 0x13b5)
+- [ ] Add PCIe scan functionality
+  - Scan `/sys/bus/pci/devices` for accelerators
+  - Filter Display/3D controllers (Class 03xxxx)
+  - Extract vendor, device, and class IDs
+- [ ] Create platform-specific detection implementations
+  - Linux: `/sys` filesystem scanning
+  - Windows: WMI (Windows Management Instrumentation) queries
+  - macOS: CoreFoundation and sysctl calls
+- [ ] Update main.cpp to use platform detection
+  - Auto-detect system platform on startup
+  - Select appropriate benchmark configuration based on detected hardware
+  - Display detected platform in system info output
+
+## Phase 11: Extended Benchmark Features (FUTURE)
+- [ ] Multi-threaded kernel implementations (OpenMP / std::thread)
+- [ ] Additional STREAM kernels (Scale, Add) with vectorization
+- [ ] Non-temporal (streaming) store implementations for systems that support them
+- [ ] JSON output format (additional to CSV and text)
+- [ ] SQLite backend for structured benchmark queries and indexing
+- [ ] Automated graph generation from persistent CSV data
+- [ ] Diff comparison tool for benchmark regression detection
+- [ ] Remote storage integration for collaborative benchmarking
