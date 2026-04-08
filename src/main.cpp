@@ -14,6 +14,8 @@
 #include "ssd_benchmark.hpp"
 #include "apu_identifier.hpp"
 #include "npu_benchmark.hpp"
+#include "platform_detection.hpp"
+#include "system_info.hpp"
 
 using namespace mem_band;
 
@@ -32,6 +34,8 @@ struct Options {
     bool run_npu = false;           // Run NPU benchmark
     bool run_npu_suite = false;     // Run NPU benchmark suite
     bool run_medium_test = false;   // Run only medium test subset (default tests)
+    bool quick_test = false;        // Run quick/short test
+    bool show_platform = false;     // Display platform identification
 };
 
 void print_usage(const char* prog) {
@@ -48,9 +52,11 @@ void print_usage(const char* prog) {
               << "  --ssd-random           Random I/O vs sequential\n"
               << "  --ssd-read-only        Read-only SSD benchmark\n"
               << "  -R, --run-apu          Run APU system identifier collection\n"
+              << "  -P, --show-platform    Display platform identification\n"
               << "  -N, --run-npu          Run NPU benchmark\n"
               << "  --run-npu-suite        Run NPU benchmark suite (all precision/operation combinations)\n"
               << "  -M, --run-medium-test  Run only default test subset (excludes 1024 MiB stress test)\n"
+              << "  -Q, --quick-test       Run quick/short test (smaller size, fewer iterations)\n"
               << "  -h, --help             Show this help message\n";
 }
 
@@ -109,6 +115,12 @@ bool parse_args(int argc, char* argv[], Options& opts) {
         }
         else if (a == "-M" || a == "--run-medium-test") {
             opts.run_medium_test = true;
+        }
+        else if (a == "-Q" || a == "--quick-test") {
+            opts.quick_test = true;
+        }
+        else if (a == "-P" || a == "--show-platform") {
+            opts.show_platform = true;
         }
         else {
             std::cerr << "Unknown option: " << a << "\n";
@@ -252,6 +264,19 @@ void run_benchmark(const Options& opts) {
     aligned_free(c);
 }
 
+void run_platform_detection() {
+    auto info = mem_band::PlatformDetection::detect();
+    auto cpu_vendor = mem_band::PlatformDetection::get_cpu_vendor();
+    auto cpu_isa = mem_band::PlatformDetection::get_cpu_isa();
+    
+    std::cout << "# Platform Identification\n";
+    std::cout << "System: " << info.cpu_vendor << " " << cpu_isa << "\n";
+    std::cout << "Detected devices:\n";
+    for (const auto& device : info.pci_devices) {
+        std::cout << "  " << device.vendor << " " << device.device << " (Class: " << device.class_id << ")\n";
+    }
+}
+
 // Run SSD benchmark
 void run_ssd_benchmark(const Options& opts) {
     mem_band::SSDConfig config{};
@@ -308,6 +333,18 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
+    // Quick test mode: reduce size and iterations
+    if (opts.quick_test) {
+        opts.sizeMiB = 64;
+        opts.iterations = 5;
+    }
+
+    // Show platform identification
+    if (opts.show_platform) {
+        run_platform_detection();
+        return EXIT_SUCCESS;
+    }
+
     // Run APU system identifier
     if (opts.run_apu) {
         run_apu_benchmark(opts);
@@ -343,5 +380,11 @@ int main(int argc, char* argv[]) {
     } else {
         run_benchmark<double>(opts);
     }
+
+    // Show platform identification after memory run (if not explicitly requested)
+    if (!opts.quick_test || !opts.show_platform) {
+        run_platform_detection();
+    }
+
     return EXIT_SUCCESS;
 }

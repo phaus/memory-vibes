@@ -97,10 +97,23 @@
   - Linux: `/sys` filesystem scanning
   - Windows: WMI (Windows Management Instrumentation) queries
   - macOS: CoreFoundation and sysctl calls
-- [ ] Update main.cpp to use platform detection
+- [x] Update main.cpp to use platform detection
+  - Added `-P, --show-platform` flag to display platform identification
   - Auto-detect system platform on startup
   - Select appropriate benchmark configuration based on detected hardware
-  - Display detected platform in system info output
+  - Display detected platform after memory benchmark
+### New CLI Features (NEW NEW)
+- [x] Add `--quick-test` / `-Q` flag for short/quick test mode
+  - Reduces array size to 64 MiB
+  - Reduces iterations to 5
+  - Faster benchmark execution for quick validation
+- [x] Add `--show-platform` / `-P` flag for platform identification display
+  - Displays CPU vendor and ISA
+  - Lists detected PCIe devices (GPU, NPU, etc.)
+  - Can be run independently or after memory benchmark
+- [ ] Document new flags in README.md
+- [ ] Test quick test mode across all platforms
+- [ ] Add quick test to CI build matrix (fast turnaround)
 
 ## Phase 11: Extended Benchmark Features (FUTURE)
 - [ ] Multi-threaded kernel implementations (OpenMP / std::thread)
