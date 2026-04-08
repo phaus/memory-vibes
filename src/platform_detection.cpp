@@ -13,6 +13,10 @@
 #include <cstring>
 #endif
 
+#ifdef __APPLE__
+#include <sys/sysctl.h>
+#endif
+
 std::string PlatformDetection::get_cpu_isa() {
 #if defined(__AVX2__)
     return "AVX2";
