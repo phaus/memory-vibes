@@ -13,7 +13,9 @@
 #include <algorithm>
 #include <iostream>
 #include <cstdio>
+#if !defined(_WIN32)
 #include <unistd.h>
+#endif
 #include <cstring>
 #if defined(__APPLE__)
 #include <sys/sysctl.h>

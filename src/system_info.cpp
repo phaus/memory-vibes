@@ -10,7 +10,13 @@ SystemIdentifier SystemInfo::collect() {
     id.memory_size_mb = detect_memory_size();
     id.os_name = detect_os().first;
     id.os_version = detect_os().second;
+    #if defined(_MSC_VER)
+    id.compiler_version = "msvc " _MSC_VER;
+#elif defined(__GNUC__)
     id.compiler_version = "gcc " __VERSION__;
+#else
+    id.compiler_version = "unknown compiler";
+#endif
     id.platform = detect_platform();
     id.simd_enabled = true;
     id.benchmark_version = "1.0.0";
