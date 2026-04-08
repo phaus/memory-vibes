@@ -29,17 +29,118 @@ By separating the CLI handling, kernel implementations, and memory allocation, t
 ### Build System
 CMake is used as the build system to provide consistent builds across Linux, macOS, and Windows platforms while allowing platform-specific optimizations when beneficial.
 
-## Platform Considerations
+## Platform Detection
 
-### Linux/macOS
+This document describes the runtime approach to detect the underlying hardware platform without external dependencies (like `libpci`).
+
+### Architecture
+Detection occurs across three levels:
+1. **Compile-Time**: Determine CPU_instruction set architecture (ISA) via compiler macros
+2. **CPU-Level (Runtime)**: Query manufacturer (Intel, AMD, ARM Implementer) via CPUID or system files
+3. **PCIe-Level (Runtime)**: Scan `/sys/` filesystem on Linux to identify discrete accelerators (GPUs, NPUs) via vendor IDs
+
+### C Reference Implementation
+
+The following implementation requires only a standard compiler (GCC/Clang) and a Linux system.
+
+```c
+// inventory.h
+#include <stdio.h>
+#include <dirent.h>
+#include <string.h>
+#include <stdlib.h>
+
+#if defined(__x86_64__) || defined(_M_X64) || defined(__i386__)
+    #include <cpuid.h>
+#endif
+
+typedef enum {
+    ARCH_X86_64,
+    ARCH_ARM64,
+    ARCH_UNKNOWN
+} cpu_arch_t;
+
+typedef enum {
+    VENDOR_AMD    = 0x1002,
+    VENDOR_NVIDIA = 0x10de,
+    VENDOR_INTEL  = 0x8086,
+    VENDOR_ARM    = 0x13b5
+} pci_vendor_t;
+
+// Helper function to read hex values from /sys
+unsigned int read_hex(const char* path) {
+    unsigned int val = 0;
+    FILE* f = fopen(path, "r");
+    if (f) {
+        fscanf(f, "%x", &val);
+        fclose(f);
+    }
+    return val;
+}
+
+// 1. CPU Architecture via macros
+cpu_arch_t get_arch() {
+#if defined(__x86_64__) || defined(_M_X64)
+    return ARCH_X86_64;
+#elif defined(__aarch64__) || defined(_M_ARM64)
+    return ARCH_ARM64;
+#else
+    return ARCH_UNKNOWN;
+#endif
+}
+
+// 2. PCIe Scan via /sys/bus/pci/devices
+void scan_pci_inventory() {
+    const char* pci_path = "/sys/bus/pci/devices";
+    DIR* dir = opendir(pci_path);
+    if (!dir) return;
+
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != NULL) {
+        if (entry->d_name[0] == '.') continue;
+
+        char path[512];
+        snprintf(path, sizeof(path), "%s/%s/vendor", pci_path, entry->d_name);
+        unsigned int vendor = read_hex(path);
+        
+        snprintf(path, sizeof(path), "%s/%s/device", pci_path, entry->d_name);
+        unsigned int device = read_hex(path);
+
+        snprintf(path, sizeof(path), "%s/%s/class", pci_path, entry->d_name);
+        unsigned int class_id = read_hex(path);
+
+        // Filter: Only Display/3D Controller (Class 03xxxx)
+        if ((class_id >> 16) == 0x03) {
+            printf("Found Accelerator: [%04x:%04x] at %s (Class %06x)\n", 
+                    vendor, device, entry->d_name, class_id);
+            
+            switch(vendor) {
+                case VENDOR_NVIDIA: printf(" -> Target: NVIDIA\n"); break;
+                case VENDOR_AMD:    printf(" -> Target: AMD\n"); break;
+                case VENDOR_INTEL:  printf(" -> Target: Intel\n"); break;
+            }
+        }
+    }
+    closedir(dir);
+}
+```
+
+### Linux
 - Uses standard POSIX APIs where applicable
 - Relies on C++17 standard library features
 - Builds with GCC or Clang compilers
+- `/sys` filesystem for hardware enumeration
 
 ### Windows
 - Compatible with MSVC compiler
 - Uses CMake generator for Visual Studio
 - Handles differences in memory allocation APIs
+- WMI (Windows Management Instrumentation) for hardware detection
+
+### macOS
+- Uses BSD APIs and sysctl for system information
+- Built with Clang compiler
+- CoreFoundation for hardware enumeration
 
 ### AMD Platform Support
 

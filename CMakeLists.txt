@@ -6,86 +6,228 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Download and configure GoogleTest
-include(FetchContent)
-FetchContent_Declare(
-  googletest
-  DOWNLOAD_EXTRACT_TIMESTAMP OFF
-  URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
-)
-FetchContent_MakeAvailable(googletest)
+# ============================================================================
+# Optional Dependencies Configuration
+# ============================================================================
 
-# Add main executable
+# Core executable build options
+option(ENABLE_SIMD "Enable SIMD vectorized kernels (AVX2/SSE2/Altivec)" OFF)
+option(BUILD_TESTING "Build test executables" ON)
+option(ENABLE_CUDA "Enable NVIDIA GPU benchmarking (requires CUDA toolkit)" OFF)
+option(ENABLE_ROCM "Enable AMD GPU/NPU benchmarking (requires ROCm)" OFF)
+option(ENABLE_JSON_OUTPUT "Enable JSON output format (requires nlohmann/json)" OFF)
+option(ENABLE_SQLITE_OUTPUT "Enable SQLite persistent storage (requires SQLite3)" OFF)
+
+# Feature detection
+option(CHECK_FEATURES "Automatically detect available features" ON)
+
+if(CHECK_FEATURES)
+    # Check for CUDA
+    if(ENABLE_CUDA STREQUAL "ON" OR ENABLE_CUDA STREQUAL "YES")
+        find_package(CUDAToolkit QUIET)
+        if(CUDAToolkit_FOUND)
+            set(CUDA_AVAILABLE ON)
+            message(STATUS "CUDA Toolkit found - GPU benchmarking enabled")
+        else()
+            message(WARNING "CUDA requested but not found - GPU benchmarking disabled")
+        endif()
+    endif()
+    
+    # Check for ROCm
+    if(ENABLE_ROCM STREQUAL "ON" OR ENABLE_ROCM STREQUAL "YES")
+        if(DEFINED ENV{ROCM_PATH})
+            set(ROCM_PATH $ENV{ROCM_PATH})
+        else()
+            find_path(ROCM_PATH include/hip/hip_runtime.h
+                PATHS /opt/rocm /opt/rocm/hip
+            )
+        endif()
+        if(ROCM_PATH AND EXISTS "${ROCM_PATH}/include/hip/hip_runtime.h")
+            set(ROCM_AVAILABLE ON)
+            message(STATUS "ROCm found at ${ROCM_PATH} - AMD benchmarking enabled")
+        else()
+            message(WARNING "ROCm requested but not found - AMD benchmarking disabled")
+        endif()
+    endif()
+    
+    # Check for SQLite3
+    if(ENABLE_SQLITE_OUTPUT STREQUAL "ON" OR ENABLE_SQLITE_OUTPUT STREQUAL "YES")
+        find_package(SQLite3 QUIET)
+        if(SQLite3_FOUND)
+            set(SQLITE_AVAILABLE ON)
+            message(STATUS "SQLite3 found - SQLite persistent storage enabled")
+        else()
+            message(WARNING "SQLite3 requested but not found - SQLite output disabled")
+        endif()
+    endif()
+endif()
+
+# Download and configure GoogleTest (always available for test builds)
+if(BUILD_TESTING)
+    include(FetchContent)
+    FetchContent_Declare(
+      googletest
+      DOWNLOAD_EXTRACT_TIMESTAMP OFF
+      URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
+    )
+    FetchContent_MakeAvailable(googletest)
+    message(STATUS "GoogleTest fetched for testing")
+endif()
+
+# ============================================================================
+# Core Executable (No External Dependencies)
+# ============================================================================
+
 add_executable(mem_band src/main.cpp src/system_info.cpp src/csv_output.cpp)
 
-# SIMD support
-option(ENABLE_SIMD "Enable SIMD vectorised kernels" OFF)
+# SIMD support (optional, disabled by default)
 if(ENABLE_SIMD)
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         if(CMAKE_SYSTEM_PROCESSOR MATCHES "i386")
             target_compile_options(mem_band PRIVATE -msse2)
+            target_compile_definitions(mem_band PRIVATE ENABLE_SSE2)
         elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "powerpc")
             target_compile_options(mem_band PRIVATE -maltivec)
+            target_compile_definitions(mem_band PRIVATE ENABLE_ALTIVEC)
         else()
             target_compile_options(mem_band PRIVATE -mavx2)
+            target_compile_definitions(mem_band PRIVATE ENABLE_AVX2)
         endif()
-        target_compile_definitions(mem_band PRIVATE SIMD_ENABLED)
+        message(STATUS "SIMD enabled with ${CMAKE_CXX_COMPILER_ID} flags")
     elseif(MSVC)
         if(CMAKE_SYSTEM_PROCESSOR MATCHES "i386")
             target_compile_options(mem_band PRIVATE /arch:SSE2)
+            target_compile_definitions(mem_band PRIVATE ENABLE_SSE2)
         else()
             target_compile_options(mem_band PRIVATE /arch:AVX2)
+            target_compile_definitions(mem_band PRIVATE ENABLE_AVX2)
         endif()
-        target_compile_definitions(mem_band PRIVATE SIMD_ENABLED)
+        message(STATUS "SIMD enabled with MSVC flags")
     endif()
 endif()
 
 target_include_directories(mem_band PRIVATE src)
 
-# Enable testing
-enable_testing()
-
-add_executable(test_benchmark tests/test_benchmark.cpp)
-add_executable(test_double tests/test_double.cpp)
-add_executable(test_alignment tests/test_alignment.cpp)
-add_executable(test_alu tests/test_alu.cpp)
-add_executable(test_ssd tests/test_ssd_benchmark.cpp)
-add_executable(test_apu_identifier tests/test_apu_identifier.cpp)
-add_executable(test_npu tests/test_npu.cpp)
-
-target_include_directories(test_benchmark PRIVATE src)
-target_include_directories(test_double PRIVATE src)
-target_include_directories(test_alignment PRIVATE src)
-target_include_directories(test_alu PRIVATE src)
-target_include_directories(test_ssd PRIVATE src)
-target_include_directories(test_apu_identifier PRIVATE src)
-target_include_directories(test_npu PRIVATE src)
-
-target_link_libraries(test_benchmark gtest gtest_main)
-target_link_libraries(test_double gtest gtest_main)
-target_link_libraries(test_alignment gtest gtest_main)
-target_link_libraries(test_alu gtest gtest_main)
-target_link_libraries(test_ssd gtest gtest_main)
-if(NOT WIN32)
-    target_link_libraries(test_apu_identifier PRIVATE c)
-else()
-    target_link_libraries(test_apu_identifier gtest gtest_main)
+# Optional SQLite output support
+if(SQLITE_AVAILABLE)
+    target_link_libraries(mem_band PRIVATE ${SQLite3_LIBRARIES})
+    target_compile_definitions(mem_band PRIVATE ENABLE_SQLITE)
 endif()
-target_link_libraries(test_npu gtest gtest_main)
 
-add_test(NAME BenchmarkUnitTest COMMAND test_benchmark)
-add_test(NAME DoubleUnitTest COMMAND test_double)
-add_test(NAME AlignmentUnitTest COMMAND test_alignment)
-add_test(NAME ALUUnitTest COMMAND test_alu)
-add_test(NAME SSDUnitTest COMMAND test_ssd)
-add_test(NAME APUIdentifierTest COMMAND test_apu_identifier)
-add_test(NAME NPUUnitTest COMMAND test_npu)
-add_test(NAME MemBandBasicRun COMMAND mem_band --size 8 --iters 1 --type float)
-add_test(NAME SSDSequentialWrite COMMAND test_ssd)
+# ============================================================================
+# Optional GPU Benchmark Executables
+# ============================================================================
 
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "i386")
-    add_compile_options(-msse2)
+# NVIDIA GPU benchmark (CUDA)
+if(CUDA_AVAILABLE OR CUDA_FOUND)
+    message(STATUS "Building CUDA GPU benchmark executable")
+    add_executable(mem_band_cuda src/main.cpp src/gpu_benchmark.cpp src/system_info.cpp src/csv_output.cpp)
+    target_include_directories(mem_band_cuda PRIVATE src)
+    if(CUDAToolkit_FOUND)
+        target_link_libraries(mem_band_cuda PRIVATE CUDAToolkit::cuda_driver CUDAToolkit::cudart)
+    else()
+        target_link_libraries(mem_band_cuda PRIVATE cuda cudart)
+    endif()
 endif()
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "powerpc")
-    add_compile_options(-maltivec)
+
+# AMD GPU/NPU benchmark (ROCm)
+if(ROCM_AVAILABLE)
+    message(STATUS "Building ROCm GPU/NPU benchmark executable")
+    add_executable(mem_band_rocm src/main.cpp src/gpu_benchmark.cpp src/npu_benchmark.cpp src/system_info.cpp src/csv_output.cpp)
+    target_include_directories(mem_band_rocm PRIVATE src ${ROCM_PATH}/include)
+    target_link_libraries(mem_band_rocm PRIVATE hip rocprofiler)
+endif()
+
+# ============================================================================
+# Test Executables
+# ============================================================================
+
+if(BUILD_TESTING)
+    # Core unit tests
+    add_executable(test_benchmark tests/test_benchmark.cpp)
+    add_executable(test_double tests/test_double.cpp)
+    add_executable(test_alignment tests/test_alignment.cpp)
+    add_executable(test_alu tests/test_alu.cpp)
+    add_executable(test_ssd tests/test_ssd_benchmark.cpp)
+    add_executable(test_apu_identifier tests/test_apu_identifier.cpp)
+    add_executable(test_npu tests/test_npu.cpp)
+
+    target_include_directories(test_benchmark PRIVATE src)
+    target_include_directories(test_double PRIVATE src)
+    target_include_directories(test_alignment PRIVATE src)
+    target_include_directories(test_alu PRIVATE src)
+    target_include_directories(test_ssd PRIVATE src)
+    target_include_directories(test_apu_identifier PRIVATE src)
+    target_include_directories(test_npu PRIVATE src)
+
+    # Link all tests with GoogleTest
+    target_link_libraries(test_benchmark GTest::gtest_main)
+    target_link_libraries(test_double GTest::gtest_main)
+    target_link_libraries(test_alignment GTest::gtest_main)
+    target_link_libraries(test_alu GTest::gtest_main)
+    target_link_libraries(test_ssd GTest::gtest_main)
+    target_link_libraries(test_npu GTest::gtest_main)
+    
+    # APU identifier test needs special handling for Windows
+    if(NOT WIN32)
+        target_link_libraries(test_apu_identifier PRIVATE c)
+    else()
+        target_link_libraries(test_apu_identifier GTest::gtest_main)
+    endif()
+
+    # Optional GPU tests (only if CUDA/ROCm available)
+    if(CUDA_AVAILABLE OR CUDA_FOUND)
+        add_executable(test_gpu tests/test_gpu.cpp)
+        target_include_directories(test_gpu PRIVATE src)
+        target_link_libraries(test_gpu GTest::gtest_main)
+        if(CUDAToolkit_FOUND)
+            target_link_libraries(test_gpu PRIVATE CUDAToolkit::cudart_c)
+        else()
+            target_link_libraries(test_gpu PRIVATE cudart)
+        endif()
+    endif()
+
+    # Register test cases
+    enable_testing()
+    add_test(NAME BenchmarkUnitTest COMMAND test_benchmark)
+    add_test(NAME DoubleUnitTest COMMAND test_double)
+    add_test(NAME AlignmentUnitTest COMMAND test_alignment)
+    add_test(NAME ALUUnitTest COMMAND test_alu)
+    add_test(NAME SSDUnitTest COMMAND test_ssd)
+    add_test(NAME APUIdentifierTest COMMAND test_apu_identifier)
+    add_test(NAME NPUUnitTest COMMAND test_npu)
+    add_test(NAME MemBandBasicRun COMMAND mem_band --size 8 --iters 1 --type float)
+    add_test(NAME SSDSequentialWrite COMMAND test_ssd)
+    
+    if(CUDA_AVAILABLE OR CUDA_FOUND)
+        add_test(NAME GPUTest COMMAND test_gpu)
+    endif()
+
+    # Platform-specific SIMD compilation flags
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES "i386")
+        add_compile_options(-msse2)
+    endif()
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES "powerpc")
+        add_compile_options(-maltivec)
+    endif()
+endif()
+
+# ============================================================================
+# Installation Rules
+# ============================================================================
+
+install(TARGETS mem_band
+    RUNTIME DESTINATION bin
+)
+
+if(CUDA_AVAILABLE OR CUDA_FOUND)
+    install(TARGETS mem_band_cuda
+        RUNTIME DESTINATION bin
+    )
+endif()
+
+if(ROCM_AVAILABLE)
+    install(TARGETS mem_band_rocm
+        RUNTIME DESTINATION bin
+    )
 endif()

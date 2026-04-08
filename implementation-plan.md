@@ -111,3 +111,48 @@
 - [ ] Automated graph generation from persistent CSV data
 - [ ] Diff comparison tool for benchmark regression detection
 - [ ] Remote storage integration for collaborative benchmarking
+
+## Phase 12: Modular Dependency System
+### Phase 12a: Dependencies Specification
+- [x] Created specs/dependencies-spec.md with full dependency documentation
+- [x] Defined core vs optional dependencies
+- [x] Documented graceful degradation patterns
+- [x] Created dependency matrix for all features
+
+### Phase 12b: CMake Reorganization
+- [x] Restructured CMakeLists.txt with modular dependency support
+- [x] Added CMake options for all optional dependencies:
+  - ENABLE_SIMD (AVX2/SSE2/Altivec)
+  - ENABLE_CUDA (NVIDIA GPU benchmarking)
+  - ENABLE_ROCM (AMD GPU/NPU benchmarking)
+  - ENABLE_JSON_OUTPUT (JSON serialization)
+  - ENABLE_SQLITE_OUTPUT (SQLite persistent storage)
+- [x] Implemented feature detection:
+  - CMake find_package for CUDA, ROCm, SQLite3
+  - Automatic capability checking with CHECK_FEATURES
+  - Conditional message display
+- [x] Created separate executables for optional features:
+  - mem_band (core, no dependencies)
+  - mem_band_cuda (CUDA/GPU only, when available)
+  - mem_band_rocm (ROCm/AMD only, when available)
+
+### Phase 12c: Dependency Isolation
+- [x] Core executable builds with zero external dependencies
+- [x] Test executables use GoogleTest via FetchContent (build-time only)
+- [x] GPU executables conditionally built based on CUDA/ROCm availability
+- [x] Graceful runtime degradation when optional features unavailable
+- [x] Platform-specific dependencies isolated (Linux /sys, Windows WMI, macOS IOKit)
+
+### Phase 12d: Runtime Dependency Handling
+- [ ] Implement dynamic library loading (dlopen/LoadLibrary) for truly optional features
+- [ ] Runtime capability discovery and feature flags
+- [ ] Clear warning messages when optional features unavailable
+- [ ] Documentation of permission requirements (e.g., Linux /sys access)
+
+### Phase 12e: Build System Documentation
+- [x] Document default build (no dependencies)
+- [x] Document full build (all optional features)
+- [x] Document minimal build (core only, no tests)
+- [ ] Add build troubleshooting guide
+- [ ] Document CI build matrix for different dependency configurations
+
