@@ -6,6 +6,7 @@ A tiny, portable utility that measures sustainable memory bandwidth on Linux, ma
 
 📄 **Detailed benchmark specification:** [specs/benchmark-spec.md](./specs/benchmark-spec.md)
 📄 **System identifier & persistence spec:** [specs/system-identifier-spec.md](./specs/system-identifier-spec.md)
+📄 **Hardware test lab spec:** [specs/hardware-test-lab-spec.md](./specs/hardware-test-lab-spec.md)
 
 ## Overview
 The program implements the following benchmarks:
@@ -35,9 +36,11 @@ mem_band/
 ├─ README.md               # This file
 ├─ implementation-plan.md # High‑level implementation tasks
 ├─ specs/                  # Specification documents (markdown)
-│   ├─ benchmark-spec.md   # Detailed benchmark description
-│   ├─ architecture-spec.md# Architecture considerations
-│   ├─ stream-spec.md      # STREAM benchmark reference
+│   ├─ benchmark-spec.md      # Detailed benchmark description
+│   ├─ architecture-spec.md   # Architecture considerations
+│   ├─ dependencies-spec.md   # Project dependencies
+│   ├─ hardware-test-lab-spec.md # Hardware test lab recommendations
+│   ├─ stream-spec.md         # STREAM benchmark reference
 │   └─ system-identifier-spec.md # System ID & CSV persistence spec
 ├─ src/
 │   ├─ main.cpp            # CLI, orchestration
