@@ -88,7 +88,7 @@ inline size_t bytes_per_element(NPUPrecision precision) {
         case NPUPrecision::FP16: return 2;
         case NPUPrecision::FP8:  return 1;
         case NPUPrecision::INT8: return 1;
-        case NPUPrecision::INT4: return 0.5;
+        case NPUPrecision::INT4: return 0;
         default: return 4;
     }
 }
