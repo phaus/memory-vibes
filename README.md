@@ -308,3 +308,68 @@ cmake .. -DCMAKE_TOOLCHAIN_FILE=toolchain-i386.cmake
 ### Platform Detection
 
 The build system automatically detects the target platform and applies appropriate compiler flags. See the respective toolchain files for platform-specific configurations.
+
+## Hardware Test Lab
+
+The benchmark is designed to run across four fundamental architectural archetypes to provide comprehensive memory performance insights:
+
+### Supported Architectures
+
+| Platform | Arch Type | Interconnect | Memory Type | Target Bandwidth |
+| :--- | :--- | :--- | :--- | :--- |
+| **NVIDIA GB10** | Coherent ARM | NVLink-C2C | LPDDR5X (Unified) | > 1 TB/s |
+| **AMD Strix Halo** | Shared x86 | Internal Bus | LPDDR5X (Shared) | ~500 GB/s |
+| **NVIDIA RTX 3090** | Discrete x86 | PCIe Gen4 | GDDR6X (Local) | ~936 GB/s |
+| **Apple Mac Studio** | Unified ARM | UltraFusion | LPDDR5 (Unified) | ~800 GB/s |
+
+### Why These Architectures?
+
+**NVIDIA GB10 (DGX Spark)** - The Coherent Datacenter Giant
+- ARM (Grace) + NVIDIA (Blackwell) via NVLink-C2C
+- Tests hardware-level coherency and ultra-fast interconnects
+- Methodology: NVLink / coherent memory access
+
+**AMD Strix Halo (Ryzen AI Max)** - The Performance APU
+- x86 (Zen 5) + RDNA 3.5 Integrated Graphics
+- Stresses shared memory contention between CPU and iGPU
+- Methodology: Unified Memory with CPU-GPU contention analysis
+
+**NVIDIA RTX 3090 (24GB)** - The Enthusiast Evergreen
+- Discrete Ampere GPU via PCIe Gen4
+- 24GB VRAM with 384-bit GDDR6X bus (~936 GB/s)
+- Methodology: Explicit PCIe data transfers
+
+**Apple Mac Studio** - The Unified Workstation
+- ARM (M-Series Ultra/Max) with up to 800 GB/s unified memory
+- Enables large-scale LLM inference beyond traditional VRAM limits
+- Methodology: Zero-copy unified memory access
+
+### Data Movement Methodologies
+
+| Architecture | Methodology | Key Focus |
+|--------------|-------------|-----------|
+| RTX 3090 | `cudaMemcpy` | PCIe transfer overhead |
+| Strix Halo | ROCm Unified Memory | DRAM contention |
+| Mac Studio | Metal Storage Buffer | Zero-copy efficiency |
+| GB10 | NVLink / BusGrind | Hardware coherency |
+
+### Implementation Roadmap
+
+1. **Develop on RTX 3090**: Establish the "Discrete Baseline"
+2. **Verify on Strix Halo**: Adjust for "Shared Memory" methodology
+3. **Optimize for Mac Studio/GB10**: Refine for ARM unified/coherent logic
+4. **Final Stress Test**: Simultaneous benchmarks on Strix Halo to measure CPU-GPU contention
+
+### Lab Value Coverage
+
+| Capability | Provided By |
+| :--- | :--- |
+| x86 Ecosystem | Strix Halo, RTX 3090 (Host) |
+| ARM Ecosystem | GB10, Mac Studio |
+| AI Community | RTX 3090, Mac Studio |
+| Enterprise Future | GB10 |
+| High-End Desktop | Mac Studio, Strix Halo |
+
+---
+
+📄 **Full hardware test lab specification:** [specs/hardware-test-lab-spec.md](./specs/hardware-test-lab-spec.md)
