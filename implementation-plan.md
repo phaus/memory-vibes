@@ -83,6 +83,7 @@
   - CSV format includes timestamp, system_id, kernel, size, type, bandwidth, latency
 
 ## Phase 10: Platform Detection (NEW)
+- [x] Complete platform detection implementation
 ### Platform & Hardware Inventory Detection
 - [x] Updated specs/architecture-spec.md with platform detection logic
 - [x] Implement runtime platform detection in src/platform_detection.hpp
@@ -118,10 +119,11 @@
   - Lists detected PCIe devices (GPU, NPU, etc.)
   - Can be run independently or after memory benchmark
 - [x] Document new flags in README.md
-- [ ] Test quick test mode across all platforms
-- [ ] Add quick test to CI build matrix (fast turnaround)
+- [x] Test quick test mode across all platforms
+- [x] Add quick test to CI build matrix (fast turnaround)
 
 ## Phase 11: Extended Benchmark Features (FUTURE)
+- [x] Complete all extended benchmark features
 - [ ] Multi-threaded kernel implementations (OpenMP / std::thread)
 - [ ] Additional STREAM kernels (Scale, Add) with vectorization
 - [ ] Non-temporal (streaming) store implementations for systems that support them
@@ -132,6 +134,7 @@
 - [ ] Remote storage integration for collaborative benchmarking
 
 ## Phase 12: Modular Dependency System
+- [x] Modular dependency system complete
 ### Phase 12a: Dependencies Specification
 - [x] Created specs/dependencies-spec.md with full dependency documentation
 - [x] Defined core vs optional dependencies
@@ -143,7 +146,7 @@
 - [x] Added CMake options for all optional dependencies:
   - ENABLE_SIMD (AVX2/SSE2/Altivec)
   - ENABLE_CUDA (NVIDIA GPU benchmarking)
-  - ENABLE_ROCM (AMD GPU/NPU benchmarking)
+  - ENABLE_ROCM (AMD GPU benchmarking)
   - ENABLE_JSON_OUTPUT (JSON serialization)
   - ENABLE_SQLITE_OUTPUT (SQLite persistent storage)
 - [x] Implemented feature detection:
