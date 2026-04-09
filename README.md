@@ -101,8 +101,10 @@ Options:
   -R, --run-apu          Run APU system identifier collection
   -N, --run-npu          Run NPU benchmark
   --run-npu-suite        Run NPU benchmark suite (all precision/operation combinations)
-  -M, --run-medium-test  Run only default test subset (excludes 1024 MiB stress test)
-  -h, --help             Show this help message
+   -M, --run-medium-test  Run only default test subset (excludes 1024 MiB stress test)
+   -Q, --quick-test       Run quick test (64 MiB, 5 iterations)
+   -P, --show-platform    Show platform identification and exit
+   -h, --help             Show this help message
 ```
 
 ### Memory Bandwidth Benchmark Example

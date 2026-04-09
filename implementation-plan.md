@@ -117,7 +117,7 @@
   - Displays CPU vendor and ISA
   - Lists detected PCIe devices (GPU, NPU, etc.)
   - Can be run independently or after memory benchmark
-- [ ] Document new flags in README.md
+- [x] Document new flags in README.md
 - [ ] Test quick test mode across all platforms
 - [ ] Add quick test to CI build matrix (fast turnaround)
 
