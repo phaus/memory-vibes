@@ -11,16 +11,17 @@ This repository provides a small set of **agents** (convention‑based scripts) 
 3. [Lint / Formatting Agent](#lint--formatting-agent)
 4. [Test Agent](#test-agent)
 5. [Run Agent](#run-agent)
-6. [Code Style Guidelines](#code-style-guidelines)
-7.    - [General C++ Conventions](#general-c-conventions)
-8.    - [Naming Conventions](#naming-conventions)
-9.    - [Headers & Includes](#headers--includes)
-10.    - [Formatting Rules](#formatting-rules)
-11.    - [Error Handling & Exceptions](#error-handling--exceptions)
-12.    - [Types & Const‑correctness](#types--const‑correctness)
-13.    - [Testing Practices](#testing-practices)
-14. [Cursor / Copilot Rules](#cursor--copilot-rules)
-15. [Agent Invocation Cheat‑Sheet](#agent-invocation-cheat‑sheet)
+6. [CI/CD Monitoring](#cicd-monitoring)
+7. [Code Style Guidelines](#code-style-guidelines)
+8.    - [General C++ Conventions](#general-c-conventions)
+9.    - [Naming Conventions](#naming-conventions)
+10.    - [Headers & Includes](#headers--includes)
+11.    - [Formatting Rules](#formatting-rules)
+12.    - [Error Handling & Exceptions](#error-handling--exceptions)
+13.    - [Types & Const‑correctness](#types--const-correctness)
+14.    - [Testing Practices](#testing-practices)
+15. [Cursor / Copilot Rules](#cursor--copilot-rules)
+16. [Agent Invocation Cheat‑Sheet](#agent-invocation-cheat-sheet)
 
 ---
 
@@ -118,6 +119,56 @@ All options are listed by `./mem_band --help`.
 
 ---
 
+## CI/CD Monitoring
+
+### Checking Build Status
+
+The CI/CD pipeline runs on every push to maintain code quality across all platforms (Linux, macOS, Windows).
+
+**View current build status:**
+```bash
+# Visit GitHub Actions for this repository
+open https://github.com/phaus/memory-vibes/actions
+```
+
+**Or use GitHub CLI:**
+```bash
+gh run list --limit 10
+```
+
+### Understanding CI/CD Results
+
+The CI/CD workflow runs:
+- **Linux**: gcc and clang with various build configurations
+- **macOS**: Latest Xcode toolchain
+- **Windows**: Visual Studio 2022 (MSVC)
+
+**Status Indicators:**
+- **✓ Green**: All platform builds and tests passed
+- **⚠ Yellow**: Warning-only builds (may indicate deprecation warnings)
+- **✗ Red**: Build or test failure requiring immediate attention
+
+### Troubleshooting CI Failures
+
+1. **Click on the failed workflow run** in the GitHub Actions UI
+2. **Expand the failed job** (Linux/macOS/Windows)
+3. **Inspect the error** in the build logs
+4. **Local reproduction**: Build with the same compiler flags locally
+
+**Common issues:**
+- Header include paths: Verify paths in `CMakeLists.txt` and `#include` directives
+- Platform-specific code: Use `#ifdef _WIN32`, `#ifdef __APPLE__`, `#ifdef __linux__`
+- Compiler-specific warnings: Add `-Wno-<warning>` in CMakeLists.txt for known issues
+
+### Expected CI Behavior After Changes
+
+- **New feature added**: All tests pass, new tests added
+- **Bug fix**: Existing tests pass, regression test added
+- **Refactoring**: No functional changes, all tests pass
+- **Platform support**: All three platforms (Linux/macOS/Windows) build and test
+
+---
+
 ## Code Style Guidelines
 
 ### General C++ Conventions
@@ -195,6 +246,7 @@ The repository does **not** contain a `.cursor/` directory or a `.github/copilot
 | Run a single test | `./build/test_<name>` |
 | Execute benchmark | `./mem_band --size 512 --iters 10` |
 | Show help | `./mem_band --help` |
+| Check CI status | `gh run list --limit 10` |
 
 Add these scripts to `package.json` or a `Makefile` if you prefer make‑based shortcuts.
 
