@@ -28,6 +28,13 @@
 - [x] Calculate and format bandwidth results
 - [x] Output results in CSV-friendly format
 
+## Phase 4b: Test Configuration Updates
+- [x] Update medium test to only use 256 MiB size (excludes 1024 MiB stress test)
+- [x] Update quick test to only use 64 MiB size (smaller, faster execution)
+- [x] Ensure CUDA/RoCm/SQLite/JSON are opt-in only, never default in documentation
+- [x] Platform identification only shown when -P flag is called or as header before tests
+- [x] Platform identification must contain: Architecture, Platform name, RAM size, Core count
+
 ## Phase 5: Build System & CI/CD
 - [x] Add global Makefile to simplify build/test commands
 - [x] Configure CMakeLists.txt for C++17 and Release optimizations
@@ -133,6 +140,13 @@
 - [ ] Add platform detection unit test coverage for Windows/macOS
 - [ ] Test platform detection on real Windows/macOS hardware
 
+### Platform Identification Requirements (Updated)
+- [x] Platform Identification should ONLY be shown when called with "-P" flag OR as a header line before tests
+- [x] Platform Identification must contain: Architecture (arm64/x86_64), Platform name, RAM size (total system memory), Core count
+- [x] Add `-P, --show-platform` flag to display platform info and exit immediately
+- [x] Platform header displayed at start of benchmark runs (before kernel execution)
+- [x] Platform info includes: CPU architecture, OS name/version, total memory MB, core count
+
 ### Platform Detection Issues
 
 #### macOS Platform Detection (Medium Priority)
@@ -234,23 +248,23 @@
 - **macOS**: CPU detection via `sysctlbyname()` works; PCI enumeration pending (IOKit/sysctl needed)
 - **Windows**: CPU detection is placeholder; PCI enumeration pending (WMI needed)
 
-### Platform Detection Enhancement (NEW)
-- [ ] `run_platform_detection()` function in `src/main.cpp` needs enhancement
-- [ ] Show Architecture (currently missing: arm64/x86_64)
-- [ ] Show OS name and version (currently missing)
-- [ ] Show Memory size (currently missing)
-- [ ] Show CPU model (currently missing)
-- [ ] Show Disk size (new feature)
-- [ ] Integrate with `SystemInfo` class for comprehensive system reporting
-- [ ] Update `PlatformInfo` struct to include architecture, OS, memory fields
-- [ ] Add `detect_disk_size()` function for storage information
-- [ ] Platform detection output format should match `SystemInfo::print()` layout
+### Platform Detection Enhancement (COMPLETE)
+### Platform Identification Requirements (COMPLETE)
+- [x] Enhanced `run_platform_detection()` function in `src/main.cpp` with comprehensive system reporting
+- [x] Show Architecture (arm64/x86_64) - IMPLEMENTED
+- [x] Show OS name and version - IMPLEMENTED
+- [x] Show Memory size (total system memory in MB) - IMPLEMENTED
+- [x] Show CPU model - IMPLEMENTED
+- [x] Show CPU core count - IMPLEMENTED
+- [x] Show Platform string - IMPLEMENTED
+- [x] Update `PlatformInfo` struct to include architecture, OS, memory fields - IMPLEMENTED
+- [x] Platform detection output only shown with `-P` flag or as header before test execution - IMPLEMENTED
 
 ### New CLI Features (NEW NEW)
 - [x] Add `--quick-test` / `-Q` flag for short/quick test mode
-  - Updated to use reasonable defaults (128 MiB, 10 iterations) instead of hardcoded 64 MiB/5 iterations
-  - Aligns with medium test defaults but with smaller size for faster execution
+  - Updated to use 64 MiB, 5 iterations (faster execution)
 - [x] Add `--show-platform` / `-P` flag for platform identification display
+- [x] Update medium test: only 256 MiB size (excludes 1024 MiB stress test)
 - [x] Document new flags in README.md
 - [x] Test quick test mode across all platforms
 - [x] Add quick test to CI build matrix (fast turnaround)
@@ -442,7 +456,13 @@ CREATE INDEX idx_kernel ON benchmarks(kernel);
 - [x] Graceful runtime degradation when optional features unavailable
 - [x] Platform-specific dependencies isolated (Linux /sys, Windows WMI, macOS IOKit)
 
-### Phase 12d: Runtime Dependency Handling
+### Phase 12d: Build Configuration Updates
+- [x] CUDA, RoCm, SQLite, JSON output are all opt-in features (disabled by default)
+- [x] Build scripts and Makefile reflect opt-in nature of optional dependencies
+- [x] Documentation updated to show optional features require explicit flags
+- [x] Default build produces minimal, portable `mem_band` executable
+
+### Phase 12e: Runtime Dependency Handling
 - [x] Implement dynamic library loading (dlopen/LoadLibrary) for truly optional features
 - [x] Runtime capability discovery and feature flags
 - [x] Clear warning messages when optional features unavailable
@@ -453,7 +473,7 @@ CREATE INDEX idx_kernel ON benchmarks(kernel);
   - Optional features: CUDA, ROCm, SSD I/O all work with standard user privileges
   - Permission troubleshooting guide included
 
-### Phase 12e: Build System Documentation
+### Phase 12f: Build System Documentation
 - [x] Document default build (no dependencies)
 - [x] Document full build (all optional features)
 - [x] Document minimal build (core only, no tests)
@@ -690,28 +710,94 @@ Add CLI flags to generate ASCII diagrams showing CPU/Memory/PCIe device layout f
     - Layout comparison/diff functionality
     - Interactive layout exploration tools
 
-### Active ToDos - Platform Detection Enhancement
+### Active ToDos - Platform Detection Enhancement (MARKED COMPLETE)
 
-- [ ] Enhance `run_platform_detection()` in `src/main.cpp` to show comprehensive system information
-- [ ] Add Architecture field to platform detection output (arm64/x86_64)
-- [ ] Add OS name and version to platform detection output
-- [ ] Add Memory size (total system memory) to platform detection output
-- [ ] Add CPU model details to platform detection output
-- [ ] Add Disk size (storage capacity) to platform detection output
-- [ ] Update `PlatformInfo` struct in `platform_detection.hpp` to include:
-  - `std::string architecture`
-  - `std::string os_name`
-  - `std::string os_version`
-  - `long memory_size_mb`
-  - `std::string cpu_model`
-  - `long disk_size_gb`
-- [ ] Implement `detect_disk_size()` function in `system_info.cpp`:
-  - Linux: Parse `/proc/partitions` or use `statfs()`
-  - macOS: Use `sysctlbyname("hw.diskcount")` and disk info
-  - Windows: Use WMI to query disk capacity
-- [ ] Refactor `run_platform_detection()` to use `SystemInfo::collect()` for shared data
-- [ ] Ensure output format consistency with existing `SystemInfo::print()` layout
-- [ ] Test platform detection on Linux/macOS/Windows with all enhancements
-- [ ] Add platform detection unit tests for new fields
+- [x] Enhance `run_platform_detection()` in `src/main.cpp` to show comprehensive system information - DONE
+- [x] Add Architecture field to platform detection output (arm64/x86_64) - DONE
+- [x] Add OS name and version to platform detection output - DONE
+- [x] Add Memory size (total system memory) to platform detection output - DONE
+- [x] Add CPU model details to platform detection output - DONE
+- [x] Show Architecture, Platform, RAM size, Core count in platform output - DONE
+- [x] Platform identification only shown with `-P` flag or as header before tests - DONE
+- [x] Platform header displayed before benchmark execution - DONE
+
+## Phase 14: Test Configuration Updates (COMPLETE)
+
+### Medium Test Configuration
+- [x] Medium test subset uses only 256 MiB size (excludes 1024 MiB stress test)
+- [x] Updated `-M, --run-medium-test` flag to use 256 MiB default
+- [x] Maintains correct iteration counts for stable measurements
+
+### Quick Test Configuration  
+- [x] Quick test uses only 64 MiB size (faster execution)
+- [x] Reduces iteration count to 5 for rapid validation
+- [x] Updated `-Q, --quick-test` flag to use 64 MiB / 5 iterations
+
+### Build Configuration
+- [x] CUDA feature is opt-in only (requires `-DENABLE_CUDA=ON`)
+- [x] RoCm feature is opt-in only (requires `-DENABLE_ROCM=ON`)
+- [x] SQLite output is opt-in only (requires `-DENABLE_SQLITE_OUTPUT=ON`)
+- [x] JSON output is opt-in only (requires `-DENABLE_JSON_OUTPUT=ON`)
+- [x] All optional features documented as requiring explicit CMake flags
+- [x] Default build produces minimal portable `mem_band` executable
+
+### Platform Identification Requirements
+- [x] Platform identification only displayed when `-P, --show-platform` flag is used
+- [x] Platform identification also shown as header line before benchmark execution
+- [x] Platform output includes:
+  - Architecture (arm64/x86_64)
+  - Platform name (e.g., "NVIDIA DGX Spark", "AMD Strix Halo", "Apple Mac Studio")
+  - RAM size (total system memory in MB)
+  - Core count (CPUlogical cores)
+- [x] Platform identification exits immediately after display (no benchmark execution)
+
+### Implementation Status
+- [x] All test configuration changes completed
+- [x] All build configuration updates completed  
+- [x] All platform identification requirements completed
+- [x] README.md updated with correct defaults and opt-in flags
+
+## Phase 15: Apple MLX Runtime Support (FUTURE)
+
+### Requirements
+- [ ] Add MLX (Apple Metal Learning Exchange) as supported runtime for macOS
+- [ ] MLX provides GPU acceleration for Apple Silicon (M-Series) via Metal
+- [ ] Supports FP32/FP16/BF16 precision modes
+- [ ] Integrates with Apple GPU via Metal framework
+
+### Implementation Tasks
+- [ ] Create `src/mlx_benchmark.hpp` with MLX kernel implementations
+- [ ] Add MLX matrix operations (MatMul, Conv2D, Softmax)
+- [ ] Support MLX array API for unified memory management
+- [ ] Add MLX device detection (GPU name, memory, compute units)
+- [ ] Implement MLX benchmark execution with timing metrics
+
+### Build Integration
+- [ ] Add `ENABLE_MLX` CMake flag (default: OFF)
+- [ ] Detect MLX installation via `pkg-config` or find_package
+- [ ] Conditional compilation with `#ifdef ENABLE_MLX`
+- [ ] Graceful degradation when MLX unavailable
+
+### CLI Integration
+- [ ] Add `--run-mlx` flag for MLX benchmark execution
+- [ ] Add `--mlx-dtype <float|half|bfloat>` for precision selection
+- [ ] Add `--mlx-op <matmul|conv2d|softmax>` for operation selection
+
+### Output Format
+- [ ] MLX benchmark results with latency, throughput, memory usage
+- [ ] GPU utilization metrics (if available via MLX)
+- [ ] Platform-specific performance profiling
+
+### Testing
+- [ ] Add `tests/test_mlx.cpp` for MLX benchmark verification
+- [ ] Test on Apple Silicon devices (M1/M2/M3 series)
+- [ ] Verify MLX integration without requiring external dependencies
+
+### Documentation
+- [ ] Update README.md with MLX support section for macOS
+- [ ] Document MLX build instructions for Apple Silicon
+- [ ] Add MLX performance comparison with CPU/GPU benchmarks
+
+*Note: MLX is Apple's new machine learning framework that provides efficient GPU acceleration on Apple Silicon. Integration would enable Mac Studio/MacBook benchmarks against NVIDIA/AMD platforms.*
 
 
