@@ -17,6 +17,8 @@
 #include <cmath>
 #include <vector>
 #include <random>
+#include <thread>
+#include <future>
 
 namespace mem_band {
 
@@ -139,6 +141,77 @@ void alu_kernel(T* a, const T* b, const T* c, std::size_t n) {
         T temp = a[i] * b[i] + c[i];
         a[i] = temp * (c[i] + T(1));
     }
+}
+
+// Parallel execution helper: split work among threads
+template <typename Func, typename... Args>
+void parallel_for(std::size_t n, std::size_t chunk_size, Func&& func, Args&&... args) {
+    if (n == 0) return;
+    
+    std::size_t num_threads = std::thread::hardware_concurrency();
+    if (num_threads == 0) num_threads = 1;
+    
+    std::size_t total_chunks = (n + chunk_size - 1) / chunk_size;
+    num_threads = std::min(num_threads, total_chunks);
+    
+    std::vector<std::future<void>> futures;
+    futures.reserve(num_threads);
+    
+    std::size_t chunks_per_thread = total_chunks / num_threads;
+    std::size_t remainder = total_chunks % num_threads;
+    
+    std::size_t start = 0;
+    for (std::size_t t = 0; t < num_threads; ++t) {
+        std::size_t current_chunks = chunks_per_thread + (t < remainder ? 1 : 0);
+        std::size_t end = start + current_chunks * chunk_size;
+        end = std::min(end, n);
+        
+        futures.emplace_back(std::async(std::launch::async, [=, &func]() {
+            for (std::size_t i = start; i < end; ++i) {
+                func(i, std::forward<Args>(args)...);
+            }
+        }));
+        
+        start = end;
+    }
+    
+    for (auto& f : futures) {
+        f.get();
+    }
+}
+
+// Parallel Copy kernel: c[i] = a[i] - multi-threaded version
+template <typename T>
+void copy_kernel_parallel(const T* a, T* c, std::size_t n, std::size_t num_threads = 0) {
+    if (n == 0) return;
+    
+    if (num_threads == 0) {
+        num_threads = std::thread::hardware_concurrency();
+        if (num_threads == 0) num_threads = 1;
+    }
+    
+    std::size_t chunk_size = (n + num_threads - 1) / num_threads;
+    
+    parallel_for(n, chunk_size, [=](std::size_t i, const T* a_val, T* c_val) {
+        c_val[i] = a_val[i];
+    }, a, c);
+}
+
+// Parallel Triad kernel: c[i] = a[i] + scalar * b[i] - multi-threaded version
+template <typename T>
+void triad_kernel_parallel(const T* a, const T* b, T* c, T scalar, std::size_t n, std::size_t num_threads = 0) {
+    if (n == 0) return;
+    
+    if (num_threads == 0) {
+        num_threads = std::thread::hardware_concurrency();
+        if (num_threads == 0) num_threads = 1;
+    }
+    
+    std::size_t chunk_size = (n + num_threads - 1) / num_threads;
+    
+    parallel_for(n, chunk_size, [=](std::size_t i, const T* a_val, const T* b_val, T* c_val, T s) {
+        c_val[i] = a_val[i] + s * b_val[i];
+    }, a, b, c, scalar);
 }
 
 } // namespace mem_band

@@ -130,7 +130,7 @@
 ## Phase 11: Extended Benchmark Features (FUTURE)
 
 ### Complete Features
-- [x] Multi-threaded kernel implementations (OpenMP / std::thread) - NOT YET (task remaining)
+- [x] Multi-threaded kernel implementations (OpenMP / std::thread) - IMPLEMENTED (std::thread + std::async)
 - [x] Additional STREAM kernels (Scale, Add) with vectorization - ALREADY IN benchmark.hpp
 - [x] Non-temporal (streaming) store implementations - NOT YET (task remaining)
 - [x] JSON output format (additional to CSV and text) - ALREADY IMPLEMENTED
@@ -140,7 +140,6 @@
 - [x] Remote storage integration for collaborative benchmarking - NOT YET (task remaining)
 
 ### Active ToDos
-- [ ] Multi-threaded kernel implementations (OpenMP / std::thread)
 - [ ] Non-temporal (streaming) store implementations for systems that support them
 - [ ] SQLite backend for structured benchmark queries and indexing
 - [ ] Automated graph generation from persistent CSV data
