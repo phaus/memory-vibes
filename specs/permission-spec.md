@@ -25,7 +25,7 @@ The basic memory bandwidth benchmark (`mem_band`) requires **no special permissi
 
 ### Linux: `/sys` Filesystem Access
 
-**Purpose**: PCIe hardware enumeration for platform detection via `--show-platform` flag
+**Purpose**: PCIe hardware enumeration for platform detection via `--show-platform` and `--show-features` flags
 
 **Access pattern**:
 - Read-only access to `/sys/bus/pci/devices`
@@ -280,7 +280,7 @@ sysctl -n hw.memsize
 No logging of sensitive data:
 - No passwords or keys collected
 - System identifiers are hardware metadata only
-- CSV output contains benchmark metrics only
+- Output (text, CSV, JSON) contains benchmark metrics only
 
 ---
 

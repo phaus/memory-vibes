@@ -79,7 +79,7 @@ timestamp,system_id,kernel,size_mib,data_type,iterations,bandwidth_gb_s,time_sec
 
 ### System Identifier Hash
 
-The system identifier hash is a SHA-256 hash of the concatenated system attributes to:
+The system identifier hash is a djb2 hash of the concatenated system attributes, truncated to 32-bit hex, to:
 
 1. Enable benchmark comparison without exposing sensitive hardware details
 2. Detect when system hardware changes significantly
@@ -101,14 +101,15 @@ Runs only the system identifier collection and exits:
   CPU: AMD Ryzen AI 300 Series
   Cores: 12
   Memory: 124546 MB
-  OS: Ubuntu 24.04.4 LTS
+  OS: Ubuntu
+  OS Version: 24.04.4 LTS
   Compiler: gcc 13.2.0
   Platform: x86_64-linux
 
-System ID: abc123def456
+System ID: abc123de
 ```
 
-### Output Format (`-f`, `--output-format`)
+### Output Format (`-o`, `--output-format`)
 
 Specify the output format for benchmark results:
 - `text` (default): Human-readable text output
@@ -116,23 +117,15 @@ Specify the output format for benchmark results:
 - `json`: JSON format for structured data
 
 ```bash
-./mem_band --size 256 -f csv
+./mem_band --size 256 -o csv
 ```
 
-### Output File (`-o`, `--output-file`)
+### Output File (`-f`, `--output-file`)
 
-Specify a file to append benchmark results (enables persistence):
+Specify a file to write benchmark results:
 
 ```bash
 ./mem_band --size 256 --output-file benchmark-results.csv
-```
-
-### Append (`-a`, `--append`)
-
-Force append mode even when no output file is specified (default behavior):
-
-```bash
-./mem_band --size 1024 --append
 ```
 
 ## Implementation Details
@@ -142,13 +135,21 @@ Force append mode even when no output file is specified (default behavior):
 ```
 mem_band/
 ├─ src/
-│  ├─ main.cpp            # CLI, orchestration, persistence
-│  ├─ system_info.hpp     # System identifier collection
-│  ├─ system_info.cpp     # Implementation
-│  ├─ csv_output.hpp      # CSV output handling
-│  ├─ csv_output.cpp      # Implementation
-│  ├─ benchmark.hpp       # Memory kernel implementations
-│  └─ aligned_alloc.hpp   # Portable aligned allocation helpers
+│  ├─ main.cpp              # CLI, orchestration, benchmark dispatch
+│  ├─ system_info.hpp       # System identifier collection (mem_band namespace)
+│  ├─ system_info.cpp       # Implementation
+│  ├─ benchmark.hpp         # Memory kernel implementations (Copy, Triad, RandomRW, ALU)
+│  ├─ aligned_alloc.hpp     # Portable aligned allocation helpers
+│  ├─ ssd_benchmark.hpp     # SSD I/O benchmark kernels
+│  ├─ npu_benchmark.hpp     # NPU benchmark (mock implementation)
+│  ├─ apu_identifier.hpp    # APU system identifier collection
+│  ├─ gpu_benchmark.hpp     # CUDA GPU benchmark
+│  ├─ platform_detection.hpp/.cpp  # Compile-time and runtime platform detection
+│  ├─ runtime_detection.hpp/.cpp   # Runtime feature detection (CUDA, ROCm, JSON, SQLite)
+│  ├─ layout_builder.hpp/.cpp      # System layout diagram builder
+│  ├─ json_output.hpp/.cpp  # JSON output formatting
+│  ├─ csv_output.hpp/.cpp   # CSV output formatting
+│  └─ benchmark_result.hpp  # Shared benchmark result struct
 ```
 
 ### System Information Collection

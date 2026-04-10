@@ -110,7 +110,9 @@ The CMakeLists.txt should be restructured to support optional dependencies:
 
 ```cmake
 # Core executable (always built, no optional dependencies)
-add_executable(mem_band src/main.cpp src/system_info.cpp src/csv_output.cpp)
+add_executable(mem_band src/main.cpp src/system_info.cpp src/csv_output.cpp
+               src/json_output.cpp src/layout_builder.cpp)
+target_link_libraries(mem_band platform_detection_lib)
 
 # Optional: GPU benchmark executable (requires CUDA)
 option(ENABLE_CUDA "Enable NVIDIA GPU benchmarking" OFF)
@@ -253,20 +255,23 @@ cmake --build .
 When optional dependencies are unavailable:
 
 1. **Warning messages**: Display non-fatal warnings about unavailable features
-2. **Disabled commands**: `--run-gpu`, `--run-npu` commands show "not available" message
+2. **Disabled commands**: `--run-npu` commands run a mock implementation without requiring hardware
 3. **Core functionality**: Memory bandwidth benchmarks always work
 
 ```cpp
+// NPU benchmark runs unconditionally using a mock implementation.
+// No ENABLE_ROCM guard needed for mock benchmarks.
 void run_npu_benchmark(const Options& opts) {
-    #if defined(ENABLE_ROCM)
-        mem_band::NPUConfig config;
+    mem_band::NPUConfig config;
+    if (opts.run_npu_suite) {
+        auto results = mem_band::run_npu_benchmark_suite(config);
+        for (const auto& result : results) {
+            mem_band::print_npu_result(result, config);
+        }
+    } else {
         auto result = mem_band::mock_npu_benchmark(config);
         mem_band::print_npu_result(result, config);
-    #else
-        std::cerr << "NPU benchmarking requires ENABLE_ROCM=ON at build time\n";
-        std::cerr << "Rebuild with: cmake .. -DENABLE_ROCM=ON\n";
-        return;
-    #endif
+    }
 }
 ```
 
@@ -378,12 +383,16 @@ C:\Windows\System32:$(PATH)
 
 ---
 
+## Implemented Optional Features
+
+1. **JSON output** (`json_output.hpp/.cpp`) -- JSON output format for benchmark results (uses hand-crafted output, no external library)
+2. **CSV output** (`csv_output.hpp/.cpp`) -- CSV output format for benchmark persistence
+
 ## Future Considerations
 
-1. **JSON serialization library** (rapidjson, nlohmann/json) - optional output format
-2. **SQLite3** - structured benchmark storage
-3. **Boost.Process** - better process management (already uses std::process)
-4. **fmt** - better string formatting (already uses std::ostringstream)
+1. **SQLite3** -- structured benchmark storage (CMake option `ENABLE_SQLITE_OUTPUT` exists but library integration is pending)
+2. **Boost.Process** -- better process management (currently uses std::process)
+3. **fmt** -- better string formatting (currently uses std::ostringstream)
 
 These can all be added as optional dependencies in the future without affecting core functionality.
 

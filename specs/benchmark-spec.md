@@ -4,7 +4,7 @@
 This document specifies the behavior and implementation details of the memory bandwidth benchmark utility. The benchmark measures sustainable memory bandwidth on Linux, macOS, and Windows systems using a subset of the STREAM benchmark kernels.
 
 ## Supported Kernels
-The benchmark implements three kernels from the STREAM benchmark suite:
+The benchmark implements the following kernels:
 
 ### Copy Kernel
 - Operation: `c[i] = a[i]`
@@ -74,6 +74,28 @@ The benchmark accepts the following command-line options:
   - `--ssd-random`: Enable random I/O instead of sequential
   - `--ssd-read-only`: Read-only test (requires pre-existing data)
 
+### ALU Kernel (`-A`, `--alu`)
+- Enables the ALU-intensive kernel alongside Copy, Triad, and RandomRW
+
+### Accelerator Benchmarks
+- `-R`, `--run-apu`: Collect APU system identifier info
+- `-N`, `--run-npu`: Run NPU benchmark (mock implementation)
+- `--run-npu-suite`: Run full NPU suite (all precisions and operation types)
+
+### System Information
+- `-P`, `--show-platform`: Show platform identification and exit
+- `--show-features`: Show available runtime features and exit
+- `-L`, `--system-layout`: Show system layout diagram and exit
+- `--layout-format <fmt>`: Layout format: `text`, `mermaid`, `json` (default: text)
+
+### Preset Modes
+- `-M`, `--run-medium-test`: Medium test (256 MiB, standard iterations)
+- `-Q`, `--quick-test`: Quick test (64 MiB, 5 iterations)
+
+### Output Options
+- `-o`, `--output-format <fmt>`: Output format: `text`, `csv`, `json` (default: text)
+- `-f`, `--output-file <path>`: Write results to file (default: stdout)
+
 ## Output Format
 
 ### Memory Bandwidth Benchmark
@@ -126,11 +148,10 @@ bandwidth(GB/s) = (bytes_per_iteration) / (time_in_seconds) / 1e9
 ```
 
 Where bytes_per_iteration depends on the kernel:
-- Copy: 2 × array_size_in_bytes
-- Triad: 3 × array_size_in_bytes
-- RandomRW: 2 × array_size_in_bytes
-- ALU: 4 × array_size_in_bytes
-- GPU Copy: 2 × array_size_in_bytes (host to device and device to host)
+- Copy: 2 x array_size_in_bytes
+- Triad: 3 x array_size_in_bytes
+- RandomRW: 2 x array_size_in_bytes
+- ALU: 4 x array_size_in_bytes
 
 ### SSD I/O Metrics
 - **Bandwidth (MB/s)**: `(total_bytes / 1024²) / duration_seconds`

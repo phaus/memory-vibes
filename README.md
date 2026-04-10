@@ -35,32 +35,41 @@ All benchmarks are written in **C++17**, use only the C++ standard library, and 
 mem_band/
 ├─ CMakeLists.txt          # CMake build script
 ├─ README.md               # This file
-├─ implementation-plan.md # High‑level implementation tasks
+├─ implementation-plan.md  # High-level implementation tasks
 ├─ specs/                  # Specification documents (markdown)
 │   ├─ benchmark-spec.md      # Detailed benchmark description
 │   ├─ architecture-spec.md   # Architecture considerations
 │   ├─ dependencies-spec.md   # Project dependencies
 │   ├─ hardware-test-lab-spec.md # Hardware test lab recommendations
+│   ├─ permission-spec.md     # Permission requirements
 │   ├─ stream-spec.md         # STREAM benchmark reference
-│   └─ system-identifier-spec.md # System ID & CSV persistence spec
+│   └─ system-identifier-spec.md # System ID & persistence spec
 ├─ src/
-│   ├─ main.cpp            # CLI, orchestration
-│   ├─ benchmark.hpp       # Templated kernel implementations
-│   ├─ aligned_alloc.hpp   # Portable aligned allocation helpers
-│   ├─ ssd_benchmark.hpp   # SSD I/O benchmark implementations
-│   ├─ apu_identifier.hpp  # APU system identifier collection
-│   ├─ npu_benchmark.hpp   # NPU benchmark implementations
-│   ├─ system_info.hpp     # System information utilities
-│   ├─ csv_output.hpp      # CSV output handling
-│   └─ gpu_benchmark.hpp   # GPU benchmark utilities
-└─ tests/                  # Unit tests
+│   ├─ main.cpp              # CLI, orchestration, benchmark dispatch
+│   ├─ benchmark.hpp         # Templated kernel implementations
+│   ├─ aligned_alloc.hpp     # Portable aligned allocation helpers
+│   ├─ ssd_benchmark.hpp     # SSD I/O benchmark implementations
+│   ├─ apu_identifier.hpp    # APU system identifier collection
+│   ├─ npu_benchmark.hpp     # NPU benchmark implementations
+│   ├─ gpu_benchmark.hpp     # GPU benchmark (optional, CUDA)
+│   ├─ system_info.hpp/.cpp  # System information (mem_band namespace)
+│   ├─ platform_detection.hpp/.cpp  # Platform detection
+│   ├─ runtime_detection.hpp/.cpp   # Runtime feature detection
+│   ├─ layout_builder.hpp/.cpp      # System layout diagram builder
+│   ├─ json_output.hpp/.cpp  # JSON output formatting
+│   ├─ csv_output.hpp/.cpp   # CSV output formatting
+│   └─ benchmark_result.hpp  # Shared benchmark result struct
+└─ tests/                  # Unit tests (GoogleTest)
     ├─ test_benchmark.cpp  # Basic kernel tests
     ├─ test_double.cpp     # Double precision tests
     ├─ test_alignment.cpp  # Alignment tests
     ├─ test_alu.cpp        # ALU kernel tests
     ├─ test_ssd_benchmark.cpp  # SSD I/O benchmark tests
-    ├─ test_apu_identifier.cpp  # APU system identifier tests
-    └─ test_npu.cpp        # NPU benchmark unit tests
+    ├─ test_apu_identifier.cpp # APU system identifier tests
+    ├─ test_npu.cpp        # NPU benchmark unit tests
+    ├─ test_system_info.cpp    # System info tests
+    ├─ test_layout_builder.cpp # Layout builder tests
+    └─ test_layout_cli.cpp     # Layout CLI tests
 ```
 
 ## Build Instructions
@@ -88,24 +97,40 @@ The executable will be located at `Release\mem_band.exe`.
 ```
 ./mem_band [options]
 
-Options:
-  -s, --size <MiB>       Size of each array (default: 256)
-  -n, --iters <N>        Number of timed iterations per kernel (default: 20)
-  -t, --type <float|double> Data type (default: float)
-  -S, --simd             Enable SIMD (not implemented)
-  -A, --alu              Run ALU-intensive kernel
-  -I, --ssd              Run SSD I/O benchmark
-  --ssd-path <path>      SSD benchmark directory (default: /tmp)
-  --ssd-block <size>     SSD block size in bytes (default: 4096)
-  --ssd-random           Random I/O vs sequential
-  --ssd-read-only        Read-only SSD benchmark
-  -R, --run-apu          Run APU system identifier collection
-  -N, --run-npu          Run NPU benchmark
-  --run-npu-suite        Run NPU benchmark suite (all precision/operation combinations)
-   -M, --run-medium-test  Run only default test subset (excludes 1024 MiB stress test)
-   -Q, --quick-test       Run quick test (64 MiB, 5 iterations)
-   -P, --show-platform    Show platform identification and exit
-   -h, --help             Show this help message
+Memory benchmark options:
+  -s, --size <MiB>           Array size in MiB (default: 256)
+  -n, --iters <N>            Iterations per kernel (default: 20)
+  -t, --type <float|double>  Data type (default: float)
+  -S, --simd                 Enable SIMD kernels (requires build flag)
+  -A, --alu                  Include ALU-intensive kernel
+
+SSD benchmark options:
+  -I, --ssd                  Run SSD I/O benchmark
+  --ssd-path <path>          Benchmark directory (default: /tmp)
+  --ssd-block <bytes>        Block size (default: 4096)
+  --ssd-random               Use random I/O (default: sequential)
+  --ssd-read-only            Read-only benchmark
+
+Accelerator benchmarks:
+  -R, --run-apu              Collect APU system identifier info
+  -N, --run-npu              Run NPU benchmark
+  --run-npu-suite            Run full NPU suite (all precisions/ops)
+
+System information:
+  -P, --show-platform        Show platform identification and exit
+  --show-features            Show available runtime features and exit
+  -L, --system-layout        Show system layout diagram and exit
+  --layout-format <fmt>      Layout format: text, mermaid, json (default: text)
+
+Preset modes:
+  -M, --run-medium-test      Medium test (256 MiB, standard iterations)
+  -Q, --quick-test           Quick test (64 MiB, 5 iterations)
+
+Output options:
+  -o, --output-format <fmt>  Output format: text, csv, json (default: text)
+  -f, --output-file <path>   Write results to file (default: stdout)
+
+  -h, --help                 Show this help message
 ```
 
 ### Memory Bandwidth Benchmark Example
@@ -232,10 +257,16 @@ RandomRead      2.15e+05   5.56e+04  17.85
 - **Power**: Lower power consumption for same throughput indicates efficiency
 
 ## Extending the Benchmark
-- Add multi‑threaded kernels (OpenMP / `std::thread`).
-- Implement additional STREAM kernels (Scale, Add).
-- Add non‑temporal (streaming) stores for systems that support them.
-- Provide JSON or CSV output flags for automated data collection.
+Already implemented extensions:
+- Additional STREAM kernels (Scale, Add, ALU) in `benchmark.hpp`
+- JSON and CSV output via `--output-format` flag
+- System layout diagrams via `-L/--system-layout`
+- Runtime feature detection via `--show-features`
+
+Planned future extensions:
+- Multi-threaded kernels (OpenMP / `std::thread`)
+- Non-temporal (streaming) stores for systems that support them
+- SQLite persistent storage backend
 
 ## Testing
 

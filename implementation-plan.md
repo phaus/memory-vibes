@@ -122,17 +122,14 @@
 
 | Platform | Architecture | CPU Detection | PCI Enumeration | Platform String | Status |
 |----------|--------------|---------------|-----------------|-----------------|---------|
-| Linux | x86_64 | `/proc/cpuinfo` vendor_id" | `/sys/bus/pci/devices` | `x86_64-linux` | ✅ Complete |
-| Linux | aarch64 | `/proc/cpuinfo` vendor_id" | `/sys/bus/pci/devices` | `aarch64-linux` | ✅ Complete |
-| macOS | x86_64 | `sysctlbyname("machdep.cpu.vendor")` | Empty (placeholder) | `x86_64-linux` ❌ | ⚠️ Broken |
-| macOS | aarch64 | `sysctlbyname("machdep.cpu.vendor")` | Empty (placeholder) | `aarch64-linux` ❌ | ⚠️ Broken |
-| Windows | x86_64 | Empty (placeholder) | Empty (WMI placeholder) | `x86_64-windows` | ⚠️ Partial |
-| Windows | aarch64 | Empty (placeholder) | Empty (WMI placeholder) | `x86_64-windows` ❌ | ⚠️ Broken |
+| Linux | x86_64 | `/proc/cpuinfo` vendor_id" | `/sys/bus/pci/devices` | `x86_64-linux` | Complete |
+| Linux | aarch64 | `/proc/cpuinfo` vendor_id" | `/sys/bus/pci/devices` | `aarch64-linux` | Complete |
+| macOS | x86_64 | `sysctlbyname("machdep.cpu.vendor")` | Empty (placeholder) | `x86_64-macos` | Partial (PCI missing) |
+| macOS | aarch64 | `sysctlbyname("machdep.cpu.vendor")` | Empty (placeholder) | `arm64-macos` | Partial (PCI missing) |
+| Windows | x86_64 | Empty (placeholder) | Empty (WMI placeholder) | `x86_64-windows` | Partial |
+| Windows | aarch64 | Empty (placeholder) | Empty (WMI placeholder) | `arm64-windows` | Partial |
 
-**Legend:**
-- ✅ Working correctly
-- ⚠️ Working but incomplete or broken
-- ❌ Incorrect (returns wrong platform string)
+**Note**: Platform detection order bug (architecture checked before OS) has been **FIXED** in both `system_info.cpp` and `apu_identifier.hpp`. OS is now checked first, then architecture.
 
 ### Active Platform Detection ToDos
 - [ ] Full Windows WMI implementation for PCIe device enumeration
@@ -147,102 +144,23 @@
 - [x] Platform header displayed at start of benchmark runs (before kernel execution)
 - [x] Platform info includes: CPU architecture, OS name/version, total memory MB, core count
 
-### Platform Detection Issues
+### Platform Detection Issues (Resolved)
 
-#### macOS Platform Detection (Medium Priority)
-**Issue**: Platform detection returns incorrect platform string on macOS
-- **Symptom**: `Platform: aarch64-linux` instead of `Platform: arm64-macos`
-- **Environment**: MacBookPro18,2 (Apple M1 Max), macOS 26.4.1 (Darwin 25.4.0)
-- **Root Cause**: `detect_platform()` in `src/system_info.cpp` uses architecture-only checks (`__aarch64__`, `__x86_64__`) without OS detection (`__APPLE__`, `__MACH__`)
-- **Impact**: System identification fails, platform-specific benchmark configuration incorrect
-- **Reproduction**:
-  ```bash
-  ./build/mem_band -R
-  # Shows: Platform: aarch64-linux (incorrect)
-  # Should show: Platform: arm64-macos
-  ```
-- **Expected**: Should detect Darwin kernel and return macOS platform string
-- **Fix**: Update `detect_platform()` to check OS first:
-  ```cpp
-  #if defined(__APPLE__) && defined(__aarch64__)
-      return "arm64-macos";
-  #elif defined(__APPLE__) && defined(__x86_64__)
-      return "x86_64-macos";
-  #elif defined(_WIN32) && defined(__aarch64__)
-      return "arm64-windows";
-  #elif defined(_WIN32)
-      return "x86_64-windows";
-  #elif defined(__aarch64__)
-      return "aarch64-linux";
-  #elif defined(__x86_64__)
-      return "x86_64-linux";
-  ```
+#### macOS Platform Detection - FIXED
+- `detect_platform()` in `system_info.cpp` and `detect_apu_platform()` in `apu_identifier.hpp` now use OS-first ordering
+- macOS correctly returns `arm64-macos` or `x86_64-macos`
 
-#### Windows Platform Detection (Medium Priority)
-**Issue**: Platform detection returns `"x86_64-windows"` on Windows ARM64
-- **Symptom**: Windows on ARM reports as x86_64
-- **Root Cause**: `_WIN32` is defined on both x86_64 AND ARM64 Windows, but code doesn't check for `__aarch64__` before `_WIN32` in correct order
-- **Fix**: Check architecture within Windows block or reorder checks:
-  ```cpp
-  #if defined(_WIN32)
-      #if defined(__aarch64__)
-          return "arm64-windows";
-      #else
-          return "x86_64-windows";
-      #endif
-  ```
+#### Windows Platform Detection - FIXED
+- `detect_platform()` now checks `_WIN32` before architecture, with nested `__aarch64__`/`_M_ARM64` check
+- Windows ARM64 correctly returns `arm64-windows`
 
-#### Platform Detection Order Bug (High Priority)
-**Issue**: Architecture macros are checked before OS macros, causing cross-platform misidentification
-- **Current logic**: `__aarch64__` → returns Linux, never checking if on macOS/Windows
-- **Expected logic**: Check OS first (`__APPLE__`, `_WIN32`), then architecture
-- **Fix**: Reorder detection to prioritize OS detection over architecture:
-  ```cpp
-  std::string detect_platform() {
-  #if defined(__APPLE__)
-      #if defined(__aarch64__)
-          return "arm64-macos";
-      #elif defined(__x86_64__)
-          return "x86_64-macos";
-      #else
-          return "unknown-macos";
-      #endif
-  #elif defined(_WIN32)
-      #if defined(__aarch64__)
-          return "arm64-windows";
-      #else
-          return "x86_64-windows";
-      #endif
-  #elif defined(__linux__)
-      #if defined(__aarch64__)
-          return "aarch64-linux";
-      #elif defined(__x86_64__)
-          return "x86_64-linux";
-      #else
-          return "unknown-linux";
-      #endif
-  #else
-      return "unknown-unknown";
-  #endif
-  }
-  ```
+#### Platform Detection Order Bug - FIXED
+- Detection now prioritizes OS detection (`__APPLE__`, `_WIN32`, `__linux__`) before architecture
 
 #### macOS PCI Device Enumeration (Low Priority)
 **Issue**: `scan_pci_macos()` in `platform_detection.cpp` returns empty vector
 - **Current**: Returns empty `std::vector<HardwareDeviceInfo>()`
 - **Expected**: Use IOKit or `system_profiler SPHardwareDataType` to enumerate devices
-- **Implementation needed**:
-  ```cpp
-  #if defined(__APPLE__)
-  std::vector<HardwareDeviceInfo> PlatformDetection::scan_pci_macos() {
-      std::vector<HardwareDeviceInfo> devices;
-      // Use IOKit to enumerate PCI devices
-      // Use sysctl with CTL_HW -> HW_SERIALNR or similar
-      // Parse system_profiler output as fallback
-      return devices;
-  }
-  #endif
-  ```
 ### Platform-Specific Implementation Status
 - **Linux**: Full implementation with `/sys` filesystem scanning
 - **macOS**: CPU detection via `sysctlbyname()` works; PCI enumeration pending (IOKit/sysctl needed)
@@ -274,12 +192,12 @@
 ### Complete Features
 - [x] Multi-threaded kernel implementations (OpenMP / std::thread) - IMPLEMENTED (std::thread + std::async)
 - [x] Additional STREAM kernels (Scale, Add) with vectorization - ALREADY IN benchmark.hpp
-- [x] Non-temporal (streaming) store implementations - NOT YET (task remaining)
-- [x] JSON output format (additional to CSV and text) - ALREADY IMPLEMENTED
-- [x] SQLite backend for structured benchmark queries and indexing - NOT YET (pending implementation)
-- [x] Automated graph generation from persistent CSV data - NOT YET (task remaining)
-- [x] Diff comparison tool for benchmark regression detection - NOT YET (task remaining)
-- [x] Remote storage integration for collaborative benchmarking - NOT YET (task remaining)
+- [ ] Non-temporal (streaming) store implementations - NOT YET IMPLEMENTED
+- [x] JSON output format (additional to CSV and text) - IMPLEMENTED in json_output.hpp/cpp
+- [ ] SQLite backend for structured benchmark queries and indexing - NOT YET IMPLEMENTED
+- [ ] Automated graph generation from persistent CSV data - NOT YET IMPLEMENTED
+- [ ] Diff comparison tool for benchmark regression detection - NOT YET IMPLEMENTED
+- [ ] Remote storage integration for collaborative benchmarking - NOT YET IMPLEMENTED
 
 ### Active ToDos
 - [ ] Non-temporal (streaming) store implementations for systems that support them
@@ -303,7 +221,7 @@
 ### New Command-Line Features Needed
 
 #### Database Commands
-- [ ] `--list-benchmarks` / `-L` - List all benchmark runs in database with filtering options:
+- [ ] `--list-benchmarks` - List all benchmark runs in database with filtering options (note: `-L` short flag is used by `--system-layout`):
   - Filter by system ID
   - Filter by date range
   - Filter by kernel type
@@ -486,11 +404,11 @@ CREATE INDEX idx_kernel ON benchmarks(kernel);
 Add CLI flags to generate ASCII diagrams showing CPU/Memory/PCIe device layout for different system architectures.
 
 ### CLI Flag Design
-- [ ] Add `-L, --system-layout` flag to display system layout
-- [ ] Support layout output formats:
-  - [ ] `text` (default) - ASCII diagram in terminal
-  - [ ] `mermaid` - Mermaid.js diagram code for documentation
-  - [ ] `json` - Structured layout data for external tools
+- [x] Add `-L, --system-layout` flag to display system layout
+- [x] Support layout output formats:
+  - [x] `text` (default) - ASCII diagram in terminal
+  - [x] `mermaid` - Mermaid.js diagram code for documentation
+  - [x] `json` - Structured layout data for external tools
 
 ### Layout Content
 - [ ] **CPU Cluster**: Show CPU(s), cores, cache hierarchy (L1/L2/L3)
@@ -668,7 +586,7 @@ Add CLI flags to generate ASCII diagrams showing CPU/Memory/PCIe device layout f
 - [ ] Handle ARM vs x86 platform differences
 
 ## Phase 13h: CLI Integration (COMPLETE)
-- [ ] Add `-L, --system-layout` flag to `Options` struct
+- [x] Add `-L, --system-layout` flag to `Options` struct
 - [x] Add `--layout-format` subflag for output format selection (text/mermaid/json)
 - [x] Add `--layout-type` manual override flag
 - [x] Add `--update-layout` for layout refresh

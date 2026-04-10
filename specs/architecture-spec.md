@@ -4,9 +4,19 @@
 The memory bandwidth benchmark follows a modular design separating concerns into distinct components:
 
 ### Components
-1. **Main Orchestration** (`src/main.cpp`) – Handles command‑line argument parsing, benchmark execution coordination (including the RandomRW kernel), and output formatting
-2. **Benchmark Kernels** (`src/benchmark.hpp`) – Templated implementations of the Copy, Triad, and RandomRW kernels
-3. **Memory Allocation** (`src/aligned_alloc.hpp`) – Portable aligned memory allocation helpers for proper cache‑line alignment
+1. **Main Orchestration** (`src/main.cpp`) -- Handles command-line argument parsing, benchmark execution coordination (including the RandomRW and ALU kernels), and output formatting
+2. **Benchmark Kernels** (`src/benchmark.hpp`) -- Templated implementations of the Copy, Triad, Scale, Add, RandomRW, and ALU kernels
+3. **Memory Allocation** (`src/aligned_alloc.hpp`) -- Portable aligned memory allocation helpers for proper cache-line alignment
+4. **SSD Benchmark** (`src/ssd_benchmark.hpp`) -- Sequential and random read/write I/O benchmarks for storage devices
+5. **NPU Benchmark** (`src/npu_benchmark.hpp`) -- Mock NPU benchmark framework for testing accelerator interfaces
+6. **APU Identifier** (`src/apu_identifier.hpp`) -- APU system identifier collection (CPU, GPU, platform detection)
+7. **GPU Benchmark** (`src/gpu_benchmark.hpp`) -- CUDA GPU memory bandwidth benchmark (optional, requires CUDA toolkit)
+8. **Platform Detection** (`src/platform_detection.hpp/.cpp`) -- Compile-time and runtime hardware platform detection (CPU ISA, PCIe device enumeration)
+9. **Runtime Detection** (`src/runtime_detection.hpp/.cpp`) -- Runtime feature probing via dynamic library loading (CUDA, ROCm, JSON, SQLite)
+10. **System Info** (`src/system_info.hpp/.cpp`) -- System identifier collection (CPU, memory, OS, compiler) within the `mem_band` namespace
+11. **Layout Builder** (`src/layout_builder.hpp/.cpp`) -- System layout diagram builder with text, Mermaid, and JSON formatters
+12. **Output Formatting** (`src/json_output.hpp/.cpp`, `src/csv_output.hpp/.cpp`) -- JSON and CSV output formatting for benchmark results
+13. **Benchmark Result** (`src/benchmark_result.hpp`) -- Shared result struct used across output formatters
 
 ### Data Flow
 1. Command-line arguments are parsed in `main.cpp`
@@ -255,7 +265,14 @@ void scan_pci_inventory() {
 
 ## Extensibility Points
 The architecture is designed to allow for future extensions:
-1. Additional STREAM kernels (Scale, Add) can be added to `benchmark.hpp`
-2. Multi-threading support can be added via OpenMP or std::thread
-3. Non-temporal store implementations can be added as specialized kernel variants
-4. Alternative output formats (JSON, CSV) can be added to the output formatting in main.cpp
+1. Multi-threading support can be added via OpenMP or std::thread
+2. Non-temporal store implementations can be added as specialized kernel variants
+
+### Already Implemented Extensions
+- Additional STREAM kernels (Scale, Add, ALU) in `benchmark.hpp`
+- JSON output format via `json_output.hpp/.cpp`
+- CSV output format via `csv_output.hpp/.cpp`
+- SSD I/O benchmarking via `ssd_benchmark.hpp`
+- NPU mock benchmarking via `npu_benchmark.hpp`
+- Runtime feature detection via `runtime_detection.hpp/.cpp`
+- System layout diagrams via `layout_builder.hpp/.cpp`
