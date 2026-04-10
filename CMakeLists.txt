@@ -78,7 +78,7 @@ endif()
 # Core Executable (No External Dependencies)
 # ============================================================================
 
-add_library(platform_detection_lib STATIC src/platform_detection.cpp src/runtime_detection.cpp)
+add_library(platform_detection_lib STATIC src/platform_detection.cpp src/runtime_detection.cpp src/platform_dynamic_lib.cpp)
 target_include_directories(platform_detection_lib PRIVATE src)
 
 add_executable(mem_band src/main.cpp src/system_info.cpp src/csv_output.cpp)

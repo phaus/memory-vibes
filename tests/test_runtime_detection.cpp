@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
+#include <algorithm>
 #include "runtime_detection.hpp"
+#include "platform_dynamic_lib.hpp"
 
 namespace mem_band {
 
@@ -56,23 +58,27 @@ TEST(RuntimeDetectionTest, IsFeatureAvailable) {
 }
 
 TEST(DynamicLibraryLoaderTest, EmptySearch) {
-    DynamicLibraryLoader loader;
-    auto paths = DynamicLibraryLoader::get_default_search_paths();
+    PlatformDynamicLib loader;
+    auto paths = PlatformDynamicLib::get_default_search_paths();
     
     EXPECT_GT(paths.size(), 0);
+#ifdef _WIN32
+    EXPECT_NE(std::find(paths.begin(), paths.end(), "C:\\Windows\\System32"), paths.end());
+#else
     EXPECT_NE(std::find(paths.begin(), paths.end(), "/usr/lib"), paths.end());
+#endif
 }
 
 TEST(DynamicLibraryLoaderTest, FindNonexistentLibrary) {
-    DynamicLibraryLoader loader;
-    auto paths = DynamicLibraryLoader::get_default_search_paths();
+    PlatformDynamicLib loader;
+    auto paths = PlatformDynamicLib::get_default_search_paths();
     
     auto libs = loader.find_libraries("libdoesnotexist12345.so", paths);
     EXPECT_EQ(libs.size(), 0);
 }
 
 TEST(DynamicLibraryLoaderTest, OpenNonexistentLibrary) {
-    DynamicLibraryLoader loader;
+    PlatformDynamicLib loader;
     auto lib = loader.open_library("libdoesnotexist12345.so");
     
     EXPECT_FALSE(lib.is_valid());
