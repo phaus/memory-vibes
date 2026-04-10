@@ -108,21 +108,135 @@
 - [ ] Create platform-specific detection implementations
   - Linux: `/sys` filesystem scanning - **IMPLEMENTED**
   - Windows: WMI (Windows Management Instrumentation) queries - **PLACEHOLDER ONLY**
-  - macOS: CoreFoundation and sysctl calls - **PARTIAL (CPU only)**
+   - macOS: CoreFoundation and sysctl calls - **PARTIAL (CPU only)**
+   - macOS: `detect_platform()` returns `"aarch64-linux"` instead of `"arm64-macos"` ❌
+
+### Platform Detection Implementation Status
+
+| Platform | Architecture | CPU Detection | PCI Enumeration | Platform String | Status |
+|----------|--------------|---------------|-----------------|-----------------|---------|
+| Linux | x86_64 | `/proc/cpuinfo` vendor_id" | `/sys/bus/pci/devices` | `x86_64-linux` | ✅ Complete |
+| Linux | aarch64 | `/proc/cpuinfo` vendor_id" | `/sys/bus/pci/devices` | `aarch64-linux` | ✅ Complete |
+| macOS | x86_64 | `sysctlbyname("machdep.cpu.vendor")` | Empty (placeholder) | `x86_64-linux` ❌ | ⚠️ Broken |
+| macOS | aarch64 | `sysctlbyname("machdep.cpu.vendor")` | Empty (placeholder) | `aarch64-linux` ❌ | ⚠️ Broken |
+| Windows | x86_64 | Empty (placeholder) | Empty (WMI placeholder) | `x86_64-windows` | ⚠️ Partial |
+| Windows | aarch64 | Empty (placeholder) | Empty (WMI placeholder) | `x86_64-windows` ❌ | ⚠️ Broken |
+
+**Legend:**
+- ✅ Working correctly
+- ⚠️ Working but incomplete or broken
+- ❌ Incorrect (returns wrong platform string)
+
 ### Active Platform Detection ToDos
 - [ ] Full Windows WMI implementation for PCIe device enumeration
 - [ ] Full macOS IOKit/sysctl implementation for PCIe device enumeration
 - [ ] Add platform detection unit test coverage for Windows/macOS
 - [ ] Test platform detection on real Windows/macOS hardware
+
+### Platform Detection Issues
+
+#### macOS Platform Detection (Medium Priority)
+**Issue**: Platform detection returns incorrect platform string on macOS
+- **Symptom**: `Platform: aarch64-linux` instead of `Platform: arm64-macos`
+- **Environment**: MacBookPro18,2 (Apple M1 Max), macOS 26.4.1 (Darwin 25.4.0)
+- **Root Cause**: `detect_platform()` in `src/system_info.cpp` uses architecture-only checks (`__aarch64__`, `__x86_64__`) without OS detection (`__APPLE__`, `__MACH__`)
+- **Impact**: System identification fails, platform-specific benchmark configuration incorrect
+- **Reproduction**:
+  ```bash
+  ./build/mem_band -R
+  # Shows: Platform: aarch64-linux (incorrect)
+  # Should show: Platform: arm64-macos
+  ```
+- **Expected**: Should detect Darwin kernel and return macOS platform string
+- **Fix**: Update `detect_platform()` to check OS first:
+  ```cpp
+  #if defined(__APPLE__) && defined(__aarch64__)
+      return "arm64-macos";
+  #elif defined(__APPLE__) && defined(__x86_64__)
+      return "x86_64-macos";
+  #elif defined(_WIN32) && defined(__aarch64__)
+      return "arm64-windows";
+  #elif defined(_WIN32)
+      return "x86_64-windows";
+  #elif defined(__aarch64__)
+      return "aarch64-linux";
+  #elif defined(__x86_64__)
+      return "x86_64-linux";
+  ```
+
+#### Windows Platform Detection (Medium Priority)
+**Issue**: Platform detection returns `"x86_64-windows"` on Windows ARM64
+- **Symptom**: Windows on ARM reports as x86_64
+- **Root Cause**: `_WIN32` is defined on both x86_64 AND ARM64 Windows, but code doesn't check for `__aarch64__` before `_WIN32` in correct order
+- **Fix**: Check architecture within Windows block or reorder checks:
+  ```cpp
+  #if defined(_WIN32)
+      #if defined(__aarch64__)
+          return "arm64-windows";
+      #else
+          return "x86_64-windows";
+      #endif
+  ```
+
+#### Platform Detection Order Bug (High Priority)
+**Issue**: Architecture macros are checked before OS macros, causing cross-platform misidentification
+- **Current logic**: `__aarch64__` → returns Linux, never checking if on macOS/Windows
+- **Expected logic**: Check OS first (`__APPLE__`, `_WIN32`), then architecture
+- **Fix**: Reorder detection to prioritize OS detection over architecture:
+  ```cpp
+  std::string detect_platform() {
+  #if defined(__APPLE__)
+      #if defined(__aarch64__)
+          return "arm64-macos";
+      #elif defined(__x86_64__)
+          return "x86_64-macos";
+      #else
+          return "unknown-macos";
+      #endif
+  #elif defined(_WIN32)
+      #if defined(__aarch64__)
+          return "arm64-windows";
+      #else
+          return "x86_64-windows";
+      #endif
+  #elif defined(__linux__)
+      #if defined(__aarch64__)
+          return "aarch64-linux";
+      #elif defined(__x86_64__)
+          return "x86_64-linux";
+      #else
+          return "unknown-linux";
+      #endif
+  #else
+      return "unknown-unknown";
+  #endif
+  }
+  ```
+
+#### macOS PCI Device Enumeration (Low Priority)
+**Issue**: `scan_pci_macos()` in `platform_detection.cpp` returns empty vector
+- **Current**: Returns empty `std::vector<HardwareDeviceInfo>()`
+- **Expected**: Use IOKit or `system_profiler SPHardwareDataType` to enumerate devices
+- **Implementation needed**:
+  ```cpp
+  #if defined(__APPLE__)
+  std::vector<HardwareDeviceInfo> PlatformDetection::scan_pci_macos() {
+      std::vector<HardwareDeviceInfo> devices;
+      // Use IOKit to enumerate PCI devices
+      // Use sysctl with CTL_HW -> HW_SERIALNR or similar
+      // Parse system_profiler output as fallback
+      return devices;
+  }
+  #endif
+  ```
+### Platform-Specific Implementation Status
+- **Linux**: Full implementation with `/sys` filesystem scanning
+- **macOS**: CPU detection via `sysctlbyname()` works; PCI enumeration pending (IOKit/sysctl needed)
+- **Windows**: CPU detection is placeholder; PCI enumeration pending (WMI needed)
+
 ### New CLI Features (NEW NEW)
 - [x] Add `--quick-test` / `-Q` flag for short/quick test mode
-  - Reduces array size to 64 MiB
-  - Reduces iterations to 5
-  - Faster benchmark execution for quick validation
 - [x] Add `--show-platform` / `-P` flag for platform identification display
-  - Displays CPU vendor and ISA
-  - Lists detected PCIe devices (GPU, NPU, etc.)
-  - Can be run independently or after memory benchmark
 - [x] Document new flags in README.md
 - [x] Test quick test mode across all platforms
 - [x] Add quick test to CI build matrix (fast turnaround)
