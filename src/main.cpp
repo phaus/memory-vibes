@@ -17,6 +17,7 @@
 #include "platform_detection.hpp"
 #include "system_info.hpp"
 #include "runtime_detection.hpp"
+#include "json_output.hpp"
 
 using namespace mem_band;
 
@@ -37,6 +38,8 @@ struct Options {
     bool run_medium_test = false;   // Run only medium test subset (default tests)
     bool quick_test = false;        // Run quick/short test
     bool show_platform = false;     // Display platform identification
+    bool json_output = false;       // Output results in JSON format
+    std::string json_filename = "benchmark_results.json"; // JSON output filename
 };
 
 void print_usage(const char* prog) {
@@ -52,13 +55,15 @@ void print_usage(const char* prog) {
               << "  --ssd-block <size>     SSD block size in bytes (default: 4096)\n"
               << "  --ssd-random           Random I/O vs sequential\n"
               << "  --ssd-read-only        Read-only SSD benchmark\n"
-              << "  -R, --run-apu          Run APU system identifier collection\n"
-              << "  -P, --show-platform    Display platform identification\n"
-              << "  -N, --run-npu          Run NPU benchmark\n"
-              << "  --run-npu-suite        Run NPU benchmark suite (all precision/operation combinations)\n"
-              << "  -M, --run-medium-test  Run only default test subset (excludes 1024 MiB stress test)\n"
-              << "  -Q, --quick-test       Run quick/short test (smaller size, fewer iterations)\n"
-              << "  -h, --help             Show this help message\n";
+               << "  -R, --run-apu          Run APU system identifier collection\n"
+               << "  -P, --show-platform    Display platform identification\n"
+               << "  -N, --run-npu          Run NPU benchmark\n"
+               << "  --run-npu-suite        Run NPU benchmark suite (all precision/operation combinations)\n"
+               << "  -M, --run-medium-test  Run only default test subset (excludes 1024 MiB stress test)\n"
+               << "  -Q, --quick-test       Run quick/short test (smaller size, fewer iterations)\n"
+               << "  -J, --json-output      Output results in JSON format\n"
+               << "  --json-file <path>     JSON output filename (default: benchmark_results.json)\n"
+               << "  -h, --help             Show this help message\n";
 }
 
 bool parse_args(int argc, char* argv[], Options& opts) {

@@ -1,5 +1,5 @@
-#include "platform_detection.hpp"
 #include <gtest/gtest.h>
+#include "platform_detection.hpp"
 
 using namespace mem_band;
 

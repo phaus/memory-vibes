@@ -8,11 +8,12 @@ This repository provides a small set of **agents** (convention‑based scripts) 
 
 1. [Agents Overview](#agents-overview)
 2. [Build Agent](#build-agent)
-3. [Lint / Formatting Agent](#lint--formatting-agent)
-4. [Test Agent](#test-agent)
-5. [Run Agent](#run-agent)
-6. [CI/CD Monitoring](#cicd-monitoring)
-7. [Code Style Guidelines](#code-style-guidelines)
+3. [Build Troubleshooting](#build-troubleshooting)
+4. [Lint / Formatting Agent](#lint--formatting-agent)
+5. [Test Agent](#test-agent)
+6. [Run Agent](#run-agent)
+7. [CI/CD Monitoring](#cicd-monitoring)
+8. [Code Style Guidelines](#code-style-guidelines)
 8.    - [General C++ Conventions](#general-c-conventions)
 9.    - [Naming Conventions](#naming-conventions)
 10.    - [Headers & Includes](#headers--includes)
@@ -54,6 +55,14 @@ cmake --build .
 - `-DENABLE_SIMD=ON` – enable AVX2 SIMD kernels (requires compatible compiler).
 - `-DCMAKE_BUILD_TYPE=Debug` – for local debugging and symbol generation.
 
+**Build configurations**:
+- **Default (core only)**: No external dependencies. Build works out-of-the-box.
+- **With SIMD**: `-DENABLE_SIMD=ON`. Enables AVX2/SSE2/Altivec kernels.
+- **With CUDA**: `-DENABLE_CUDA=ON`. Builds `mem_band_cuda` executable (requires CUDA toolkit).
+- **With ROCm**: `-DENABLE_ROCM=ON`. Builds `mem_band_rocm` executable (requires ROCm toolkit).
+- **With JSON**: `-DENABLE_JSON_OUTPUT=ON`. Enables JSON output format (requires nlohmann/json via CMake).
+- **With SQLite**: `-DENABLE_SQLITE_OUTPUT=ON`. Enables SQLite persistence (requires SQLite3 via CMake).
+
 **One‑liner shortcut** (available as `./scripts/build.sh`):
 ```bash
 #!/usr/bin/env bash
@@ -61,6 +70,50 @@ set -e
 mkdir -p build && cd build
 cmake .. "${@:- -DCMAKE_BUILD_TYPE=Release}" && cmake --build .
 ```
+
+---
+
+## Build Troubleshooting
+
+### Common Build Issues
+
+1. **Missing CMakeLists.txt**
+   - Error: `CMake Error: The source directory does not exist`
+   - Solution: Ensure you're in the project root directory with `CMakeLists.txt`
+
+2. **Compiler not found**
+   - Error: `CMake Error: Cannot find CMAKE_C_COMPILER`
+   - Solution: Install a C++17-compatible compiler (gcc 7+, clang 5+, MSVC 2017+)
+
+3. **Missing dependencies**
+   - Error: `Could NOT find CUDA`, `Could NOT find ROCm`, etc.
+   - Solution: Install the required toolkit or disable the feature with `-DENABLE_*_FEATURE=OFF`
+
+4. **Permission denied on Linux**
+   - Error: `/sys/bus/pci/devices` access denied
+   - Solution: Add user to `plugdev` group: `sudo usermod -a -G plugdev $USER`
+
+5. **Windows HMODULE cast error**
+   - Error: `C2664: 'FreeLibrary': cannot convert argument 1 from 'void *' to 'HMODULE'`
+   - Solution: Use `static_cast<HMODULE>(handle)` when calling `FreeLibrary()` on Windows
+
+6. **C++17 support required**
+   - Error: `error: parallel algorithms require -std=c++17 or later`
+   - Solution: Ensure compiler supports C++17 or use `set(CMAKE_CXX_STANDARD 17)` in CMakeLists.txt
+
+### Platform-Specific Notes
+
+**Linux:**
+- May require additional packages: `libdl-dev` for dynamic loading
+- For PCIe device detection: read access to `/sys/bus/pci/devices`
+
+**macOS:**
+- Use Xcode 11+ for C++17 support
+- CoreFoundation framework required for platform detection
+
+**Windows:**
+- Use Visual Studio 2017+ or VS Build Tools 2017+
+- WMI access required for platform detection (standard on modern Windows)
 
 ---
 
@@ -167,6 +220,31 @@ The CI/CD workflow runs:
 - **Refactoring**: No functional changes, all tests pass
 - **Platform support**: All three platforms (Linux/macOS/Windows) build and test
 
+### CI Build Matrix
+
+The CI pipeline tests multiple configurations across three platforms:
+
+| Platform | Compiler | Config | Notes |
+|----------|----------|--------|-------|
+| Linux (ubuntu-latest) | gcc, clang | Release | Default build with all optional features disabled |
+| Linux | gcc | Release + SIMD | Tests AVX2/SSE2/Altivec support |
+| Linux | gcc | Release + CUDA | Tests CUDA GPU benchmarking (if available) |
+| Linux | gcc | Release + ROCm | Tests ROCm GPU benchmarking (if available) |
+| macOS (macos-latest) | Apple Clang | Release | Core build with macOS-specific features |
+| Windows (windows-latest) | MSVC 2022 | Release | Tests Windows platform detection and WMI |
+
+**Dependency configurations tested:**
+- **Default build**: No external dependencies (core functionality only)
+- **SIMD build**: AVX2/SSE2/Altivec enabled via `-DENABLE_SIMD=ON`
+- **CUDA build**: NVIDIA GPU benchmarking via `-DENABLE_CUDA=ON`
+- **ROCm build**: AMD GPU benchmarking via `-DENABLE_ROCM=ON`
+- **JSON build**: JSON output format via `-DENABLE_JSON_OUTPUT=ON`
+- **SQLite build**: SQLite persistence via `-DENABLE_SQLITE_OUTPUT=ON`
+
+**Linux platform builds** also test legacy configurations:
+- **PowerPC32/64**: Toolchain-based cross-compilation
+- **i386**: 32-bit x86 support
+
 ---
 
 ## Code Style Guidelines
@@ -241,6 +319,11 @@ The repository does **not** contain a `.cursor/` directory or a `.github/copilot
 |--------|---------|
 | Build (Release) | `./scripts/build.sh` |
 | Build (Debug) | `./scripts/build.sh -DCMAKE_BUILD_TYPE=Debug` |
+| Build (SIMD) | `./scripts/build.sh -DENABLE_SIMD=ON` |
+| Build (CUDA) | `./scripts/build.sh -DENABLE_CUDA=ON` |
+| Build (ROCm) | `./scripts/build.sh -DENABLE_ROCM=ON` |
+| Build (JSON) | `./scripts/build.sh -DENABLE_JSON_OUTPUT=ON` |
+| Build (SQLite) | `./scripts/build.sh -DENABLE_SQLITE_OUTPUT=ON` |
 | Lint / Format | `./scripts/lint.sh` |
 | Run full tests | `ctest --output-on-failure` |
 | Run a single test | `./build/test_<name>` |
