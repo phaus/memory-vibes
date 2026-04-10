@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 #include "system_info.hpp"
 
+using namespace mem_band;
+
 namespace {
 
 class SystemInfoTest : public testing::Test {

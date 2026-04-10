@@ -1,15 +1,19 @@
 #include "system_info.hpp"
+#include <cstdint>
 #include <iostream>
 #include <sstream>
 #include <vector>
+
+namespace mem_band {
 
 SystemIdentifier SystemInfo::collect() {
     SystemIdentifier id;
     id.cpu_model = detect_cpu_model();
     id.core_count = detect_core_count();
     id.memory_size_mb = detect_memory_size();
-    id.os_name = detect_os().first;
-    id.os_version = detect_os().second;
+    auto [os_name, os_version] = detect_os();
+    id.os_name = os_name;
+    id.os_version = os_version;
     std::ostringstream oss_version;
 #if defined(_MSC_VER)
     oss_version << "msvc " << _MSC_VER;
@@ -54,10 +58,8 @@ std::string SystemInfo::generate_hash(const SystemIdentifier& id) {
 }
 
 std::string SystemInfo::detect_cpu_model() {
-    std::cout << "COMPILE TEST\n";
 #ifdef __aarch64__
     std::string result = "ARM 64-bit CPU";
-    std::cout << "[DEBUG] : returning " << result << "\n";
     return result;
 #elif defined(__x86_64__)
     std::ifstream cpuinfo("/proc/cpuinfo");
@@ -96,9 +98,10 @@ long SystemInfo::detect_memory_size() {
     }
 #endif
 #ifdef __APPLE__
-    size_t size = 0;
-    sysctlbyname("hw.memsize", &size, nullptr, nullptr, 0);
-    return size / (1024 * 1024);
+    uint64_t memsize = 0;
+    size_t len = sizeof(memsize);
+    sysctlbyname("hw.memsize", &memsize, &len, nullptr, 0);
+    return static_cast<long>(memsize / (1024 * 1024));
 #endif
     return 1;  // Fallback
 }
@@ -129,13 +132,35 @@ std::pair<std::string, std::string> SystemInfo::detect_os() {
 }
 
 std::string SystemInfo::detect_platform() {
-#ifdef __aarch64__
-    return "aarch64-linux";
-#elif defined(__x86_64__)
-    return "x86_64-linux";
-#elif defined(_WIN32)
-    return "x86_64-windows";
+#if defined(_WIN32)
+    #if defined(__aarch64__) || defined(_M_ARM64)
+        return "arm64-windows";
+    #else
+        return "x86_64-windows";
+    #endif
+#elif defined(__APPLE__)
+    #if defined(__aarch64__)
+        return "arm64-macos";
+    #else
+        return "x86_64-macos";
+    #endif
+#elif defined(__linux__)
+    #if defined(__aarch64__)
+        return "aarch64-linux";
+    #elif defined(__x86_64__)
+        return "x86_64-linux";
+    #elif defined(__powerpc64__)
+        return "ppc64-linux";
+    #elif defined(__powerpc__)
+        return "ppc32-linux";
+    #elif defined(__i386__)
+        return "i386-linux";
+    #else
+        return "unknown-linux";
+    #endif
 #else
     return "unknown-unknown";
 #endif
 }
+
+} // namespace mem_band

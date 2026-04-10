@@ -5,17 +5,7 @@
 #include <fstream>
 #include <vector>
 
-struct BenchmarkResult {
-    unsigned long long timestamp;
-    std::string system_id;
-    std::string kernel;
-    unsigned long long size_mib;
-    std::string data_type;
-    unsigned long long iterations;
-    double bandwidth_gb_s;
-    double time_seconds;
-    unsigned long long bytes_per_iter;
-};
+#include "benchmark_result.hpp"
 
 class CSVOutput {
 public:
@@ -30,6 +20,9 @@ public:
     
     // Close the file
     void close();
+
+    // Query whether the underlying file stream is open
+    bool is_open() const { return is_open_; }
 
 private:
     std::ofstream file_;

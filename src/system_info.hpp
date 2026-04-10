@@ -13,6 +13,8 @@
 #include <sys/sysctl.h>
 #endif
 
+namespace mem_band {
+
 struct SystemIdentifier {
     std::string cpu_model;
     int core_count;
@@ -38,5 +40,7 @@ private:
     static std::pair<std::string, std::string> detect_os();
     static std::string detect_platform();
 };
+
+} // namespace mem_band
 
 #endif // SYSTEM_INFO_HPP

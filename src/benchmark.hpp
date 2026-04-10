@@ -120,12 +120,19 @@ void add_kernel(const T* a, const T* b, T* c, std::size_t n) {
 
 template <typename T>
 void random_rw_kernel(const T* a, T* c, std::size_t n) {
-    // Create a vector of indices [0, n)
-    std::vector<std::size_t> idx(n);
-    for (std::size_t i = 0; i < n; ++i) idx[i] = i;
-    // Shuffle indices
-    std::mt19937 rng(0xDEADBEEF); // deterministic seed
-    std::shuffle(idx.begin(), idx.end(), rng);
+    // Reuse index vector across calls with the same size to avoid
+    // re‑allocating and re‑shuffling on every invocation.
+    thread_local std::vector<std::size_t> idx;
+    thread_local std::size_t cached_n = 0;
+
+    if (cached_n != n) {
+        idx.resize(n);
+        for (std::size_t i = 0; i < n; ++i) idx[i] = i;
+        std::mt19937 rng(0xDEADBEEF); // deterministic seed
+        std::shuffle(idx.begin(), idx.end(), rng);
+        cached_n = n;
+    }
+
     // Perform random accesses
     for (std::size_t i = 0; i < n; ++i) {
         c[idx[i]] = a[idx[i]];
@@ -145,7 +152,7 @@ void alu_kernel(T* a, const T* b, const T* c, std::size_t n) {
 
 // Parallel execution helper: split work among threads
 template <typename Func, typename... Args>
-void parallel_for(std::size_t n, std::size_t chunk_size, Func&& func, Args&&... args) {
+void parallel_for(std::size_t n, std::size_t chunk_size, Func&& func, Args... args) {
     if (n == 0) return;
     
     std::size_t num_threads = std::thread::hardware_concurrency();
@@ -168,7 +175,7 @@ void parallel_for(std::size_t n, std::size_t chunk_size, Func&& func, Args&&... 
         
         futures.emplace_back(std::async(std::launch::async, [=, &func]() {
             for (std::size_t i = start; i < end; ++i) {
-                func(i, std::forward<Args>(args)...);
+                func(i, args...);
             }
         }));
         

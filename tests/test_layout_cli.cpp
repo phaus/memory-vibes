@@ -6,7 +6,7 @@
 namespace mem_band {
 
 struct Options {
-    std::size_t sizeMiB = 256;
+    std::size_t size_mib = 256;
     std::size_t iterations = 20;
     std::string type = "float";
     bool simd = false;
@@ -22,10 +22,11 @@ struct Options {
     bool run_medium_test = false;
     bool quick_test = false;
     bool show_platform = false;
-    bool json_output = false;
-    std::string json_filename = "benchmark_results.json";
+    bool show_runtime_features = false;
     bool system_layout = false;
     std::string layout_format = "text";
+    std::string output_format = "text";
+    std::string output_file;
 };
 
 bool parse_args(int argc, char* argv[], Options& opts) {
@@ -35,7 +36,7 @@ bool parse_args(int argc, char* argv[], Options& opts) {
         if (a == "-h" || a == "--help") { return false; }
         else if (a == "-s" || a == "--size") {
             if (i + 1 >= args.size()) { return false; }
-            opts.sizeMiB = std::stoul(args[++i]);
+            opts.size_mib = std::stoul(args[++i]);
         }
         else if (a == "-L" || a == "--system-layout") {
             opts.system_layout = true;
@@ -58,15 +59,9 @@ bool parse_args(int argc, char* argv[], Options& opts) {
                 return false;
             }
         }
-        else if (a == "-S" || a == "--simd") {
-            opts.simd = true;
-        }
-        else if (a == "-A" || a == "--alu") {
-            opts.alu = true;
-        }
-        else if (a == "-I" || a == "--ssd") {
-            opts.ssd = true;
-        }
+        else if (a == "-S" || a == "--simd") { opts.simd = true; }
+        else if (a == "-A" || a == "--alu") { opts.alu = true; }
+        else if (a == "-I" || a == "--ssd") { opts.ssd = true; }
         else if (a == "--ssd-path") {
             if (i + 1 >= args.size()) { return false; }
             opts.ssd_path = args[++i];
@@ -75,36 +70,25 @@ bool parse_args(int argc, char* argv[], Options& opts) {
             if (i + 1 >= args.size()) { return false; }
             opts.ssd_block_size = std::stoul(args[++i]);
         }
-        else if (a == "--ssd-random") {
-            opts.ssd_random = true;
-        }
-        else if (a == "--ssd-read-only") {
-            opts.ssd_read_only = true;
-        }
-        else if (a == "-R" || a == "--run-apu") {
-            opts.run_apu = true;
-        }
-        else if (a == "-N" || a == "--run-npu") {
-            opts.run_npu = true;
-        }
-        else if (a == "--run-npu-suite") {
-            opts.run_npu_suite = true;
-        }
-        else if (a == "-M" || a == "--run-medium-test") {
-            opts.run_medium_test = true;
-        }
-        else if (a == "-Q" || a == "--quick-test") {
-            opts.quick_test = true;
-        }
-        else if (a == "-P" || a == "--show-platform") {
-            opts.show_platform = true;
-        }
-        else if (a == "-J" || a == "--json-output") {
-            opts.json_output = true;
-        }
-        else if (a == "--json-file") {
+        else if (a == "--ssd-random") { opts.ssd_random = true; }
+        else if (a == "--ssd-read-only") { opts.ssd_read_only = true; }
+        else if (a == "-R" || a == "--run-apu") { opts.run_apu = true; }
+        else if (a == "-N" || a == "--run-npu") { opts.run_npu = true; }
+        else if (a == "--run-npu-suite") { opts.run_npu_suite = true; }
+        else if (a == "-M" || a == "--run-medium-test") { opts.run_medium_test = true; }
+        else if (a == "-Q" || a == "--quick-test") { opts.quick_test = true; }
+        else if (a == "-P" || a == "--show-platform") { opts.show_platform = true; }
+        else if (a == "--show-features") { opts.show_runtime_features = true; }
+        else if (a == "-o" || a == "--output-format") {
             if (i + 1 >= args.size()) { return false; }
-            opts.json_filename = args[++i];
+            opts.output_format = args[++i];
+            if (opts.output_format != "text" && opts.output_format != "csv" && opts.output_format != "json") {
+                return false;
+            }
+        }
+        else if (a == "-f" || a == "--output-file") {
+            if (i + 1 >= args.size()) { return false; }
+            opts.output_file = args[++i];
         }
         else {
             return false;
@@ -245,7 +229,7 @@ TEST(LayoutCLITest, ParseLayoutWithSizeFlag) {
     
     EXPECT_TRUE(result);
     EXPECT_TRUE(opts.system_layout);
-    EXPECT_EQ(opts.sizeMiB, 512);
+    EXPECT_EQ(opts.size_mib, 512);
 }
 
 TEST(LayoutCLITest, LayoutOnlyDoesNotRunBenchmark) {

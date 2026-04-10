@@ -71,7 +71,7 @@ inline SSDResult sequential_write_benchmark(const std::string& file_path, std::s
     double duration_s = std::chrono::duration<double>(end - start).count();
     
     if (duration_s > 0) {
-        result.bandwidth_mbps = (total_bytes / (1024.0 * 1024.0)) / duration_s * 1000; // MB/s -> *1000 for Mbps equivalent
+        result.bandwidth_mbps = (total_bytes / (1024.0 * 1024.0)) / duration_s;
         result.iops = num_blocks / duration_s;
         result.latency_us = (duration_s / num_blocks) * 1000000; // seconds to microseconds
     }
@@ -117,7 +117,7 @@ inline SSDResult sequential_read_benchmark(const std::string& file_path, std::si
     double duration_s = std::chrono::duration<double>(end - start).count();
     
     if (duration_s > 0) {
-        result.bandwidth_mbps = (total_bytes / (1024.0 * 1024.0)) / duration_s * 1000;
+        result.bandwidth_mbps = (total_bytes / (1024.0 * 1024.0)) / duration_s;
         result.iops = num_blocks / duration_s;
         result.latency_us = (duration_s / num_blocks) * 1000000;
     }
@@ -180,7 +180,7 @@ inline SSDResult random_write_benchmark(const std::string& file_path, std::size_
     double duration_s = std::chrono::duration<double>(end - start).count();
     
     if (duration_s > 0) {
-        result.bandwidth_mbps = (total_bytes / (1024.0 * 1024.0)) / duration_s * 1000;
+        result.bandwidth_mbps = (total_bytes / (1024.0 * 1024.0)) / duration_s;
         result.iops = num_blocks / duration_s;
         result.latency_us = (duration_s / num_blocks) * 1000000;
     }
@@ -233,7 +233,7 @@ inline SSDResult random_read_benchmark(const std::string& file_path, std::size_t
     double duration_s = std::chrono::duration<double>(end - start).count();
     
     if (duration_s > 0) {
-        result.bandwidth_mbps = (total_bytes / (1024.0 * 1024.0)) / duration_s * 1000;
+        result.bandwidth_mbps = (total_bytes / (1024.0 * 1024.0)) / duration_s;
         result.iops = num_blocks / duration_s;
         result.latency_us = (duration_s / num_blocks) * 1000000;
     }
@@ -254,23 +254,21 @@ inline SSDResult run_ssd_benchmark(const SSDConfig& config) {
     // Generate test file path
     std::string file_path = generate_ssd_file_path(config.path, "test");
     
-    // Pre-create file if it doesn't exist
     if (config.read_only) {
-        // File should already exist for read-only tests
-        // Run benchmarks
+        // Create the test file with an untimed write pass so the read has data
+        sequential_write_benchmark(file_path, config.block_size, config.num_blocks);
+        // Run read benchmark
         if (config.sequential) {
             result = sequential_read_benchmark(file_path, config.block_size, config.num_blocks);
         } else {
             result = random_read_benchmark(file_path, config.block_size, config.num_blocks);
         }
     } else {
-        // Write-first approach
+        // Write benchmark: return the write result
         if (config.sequential) {
-            sequential_write_benchmark(file_path, config.block_size, config.num_blocks);
-            result = sequential_read_benchmark(file_path, config.block_size, config.num_blocks);
+            result = sequential_write_benchmark(file_path, config.block_size, config.num_blocks);
         } else {
-            random_write_benchmark(file_path, config.block_size, config.num_blocks);
-            result = random_read_benchmark(file_path, config.block_size, config.num_blocks);
+            result = random_write_benchmark(file_path, config.block_size, config.num_blocks);
         }
     }
     

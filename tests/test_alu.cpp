@@ -18,24 +18,15 @@ int main() {
     }
     // Run the ALU kernel
     mem_band::alu_kernel(a, b, c, n);
-    // Check that the arrays are modified (we expect a[i] to be changed)
-    bool changed = false;
+    // Check that the ALU kernel produced the expected result.
+    //   temp = a[i] * b[i] + c[i]
+    //   a[i] = temp * (c[i] + 1)
+    // With initial values: a[i]=1, b[i]=2, c[i]=3
+    //   temp = 1*2 + 3 = 5
+    //   a[i] = 5 * (3 + 1) = 5 * 4 = 20
     for (std::size_t i = 0; i < n; ++i) {
-        // We don't know the exact value, but we know it's not the initial value?
-        // Actually, we do: 
-        //   temp = a[i] * b[i] + c[i]
-        //   a[i] = temp * c[i] + temp
-        //   = temp * (c[i] + 1)
-        //   = (a[i] * b[i] + c[i]) * (c[i] + 1)
-        // With initial values: a[i]=1, b[i]=2, c[i]=3
-        // temp = 1*2 + 3 = 5
-        // a[i] = 5 * (3 + 1) = 5 * 4 = 20
-        if (a[i] != 20.0f) {
-            changed = true;
-            break;
-        }
+        assert(a[i] == 20.0f);
     }
-    assert(changed);
     mem_band::aligned_free(a);
     mem_band::aligned_free(b);
     mem_band::aligned_free(c);

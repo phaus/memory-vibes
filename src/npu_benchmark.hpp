@@ -11,6 +11,9 @@
 #include <cmath>
 #include <random>
 #include <iostream>
+#include <iomanip>
+#include <vector>
+#include <cstdio>
 
 namespace mem_band {
 
@@ -77,6 +80,8 @@ struct NPUResult {
     double throughput_tflops;    // Tera operations per second
     double power_watts;          // Estimated power consumption
     int device_id;               // Device used for benchmark
+    NPUPrecision precision;      // Precision used for this result
+    NPUOpType op_type;           // Operation type used for this result
 };
 
 /**
@@ -88,7 +93,7 @@ inline size_t bytes_per_element(NPUPrecision precision) {
         case NPUPrecision::FP16: return 2;
         case NPUPrecision::FP8:  return 1;
         case NPUPrecision::INT8: return 1;
-        case NPUPrecision::INT4: return 0;
+        case NPUPrecision::INT4: return 1; // 4-bit; use 1 byte as minimum addressable unit
         default: return 4;
     }
 }
@@ -149,6 +154,8 @@ inline NPUResult mock_npu_benchmark(const NPUConfig& config) {
     result.throughput_tflops = throughput_tflops * noise(gen);
     result.power_watts = power * noise(gen);
     result.device_id = config.device_id;
+    result.precision = config.precision;
+    result.op_type = config.op_type;
     
     return result;
 }
@@ -179,6 +186,25 @@ inline std::vector<NPUResult> run_npu_benchmark_suite(const NPUConfig& base_conf
 }
 
 /**
+ * @brief Format an operations-per-second value with appropriate SI suffix
+ */
+inline std::string format_ops(double ops) {
+    char buf[32];
+    if (ops >= 1e12) {
+        std::snprintf(buf, sizeof(buf), "%.2f TOPS", ops / 1e12);
+    } else if (ops >= 1e9) {
+        std::snprintf(buf, sizeof(buf), "%.2f GOPS", ops / 1e9);
+    } else if (ops >= 1e6) {
+        std::snprintf(buf, sizeof(buf), "%.2f MOPS", ops / 1e6);
+    } else if (ops >= 1e3) {
+        std::snprintf(buf, sizeof(buf), "%.2f KOPS", ops / 1e3);
+    } else {
+        std::snprintf(buf, sizeof(buf), "%.0f OPS", ops);
+    }
+    return buf;
+}
+
+/**
  * @brief Print NPU benchmark result to stream
  * 
  * @param result Benchmark result
@@ -193,10 +219,13 @@ inline void print_npu_result(const NPUResult& result, const NPUConfig& config,
        << " " << NPUConfig::precision_str(config.precision) 
        << " (size=" << config.workload_size << ")\n";
     os << "  Metrics:\n";
-    os << "    Latency:      " << result.latency_ms << " ms\n";
-    os << "    Throughput:   " << result.throughput_ops << " OPS\n";
-    os << "                (" << result.throughput_tflops << " TFLOPS)\n";
-    os << "    Power:        " << result.power_watts << " W\n";
+    os << std::fixed;
+    os << "    Latency:      " << std::setprecision(2) << result.latency_ms << " ms\n";
+    os << "    Throughput:   " << format_ops(result.throughput_ops) << "\n";
+    if (result.throughput_tflops >= 0.001) {
+        os << "                  " << std::setprecision(4) << result.throughput_tflops << " TFLOPS\n";
+    }
+    os << "    Power:        " << std::setprecision(2) << result.power_watts << " W\n";
 }
 
 /**
@@ -208,11 +237,22 @@ inline void print_npu_result(const NPUResult& result, const NPUConfig& config,
 inline void print_npu_suite_results(const std::vector<NPUResult>& results,
                                     std::ostream& os = std::cout) {
     os << "# NPU Benchmark Suite Results\n";
-    os << "Precision | OpType      | Latency(ms) | OPS          | TFLOPS   | Power(W)\n";
-    os << "----------|-------------|-------------|--------------|----------|---------\n";
+    os << std::left  << std::setw(10) << "Precision"
+       << std::left  << std::setw(12) << "OpType"
+       << std::right << std::setw(13) << "Latency(ms)"
+       << std::setw(16) << "Throughput"
+       << std::setw(12) << "TFLOPS"
+       << std::setw(10) << "Power(W)" << "\n";
+    os << std::string(73, '-') << "\n";
     
     for (const auto& result : results) {
-        os << "";
+        os << std::left  << std::setw(10) << NPUConfig::precision_str(result.precision)
+           << std::left  << std::setw(12) << NPUConfig::op_type_str(result.op_type)
+           << std::right << std::setw(13) << std::fixed << std::setprecision(2) << result.latency_ms
+           << std::setw(16) << format_ops(result.throughput_ops)
+           << std::setw(12) << std::setprecision(4) << result.throughput_tflops
+           << std::setw(10) << std::setprecision(2) << result.power_watts
+           << "\n";
     }
     os << std::endl;
 }

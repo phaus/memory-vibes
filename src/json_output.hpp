@@ -6,17 +6,7 @@
 #include <map>
 #include <fstream>
 
-struct BenchmarkResult {
-    unsigned long long timestamp;
-    std::string system_id;
-    std::string kernel;
-    unsigned long long size_mib;
-    std::string data_type;
-    unsigned long long iterations;
-    double bandwidth_gb_s;
-    double time_seconds;
-    unsigned long long bytes_per_iter;
-};
+#include "benchmark_result.hpp"
 
 class JSONOutput {
 public:

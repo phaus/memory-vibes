@@ -214,11 +214,27 @@ static std::string detect_apu_platform(const std::string& cpu_model) {
         return "AMD APU";
     }
     
-    // Check preprocessor defines for platform
-#if defined(__aarch64__)
-    return "aarch64-linux";
-#elif defined(__x86_64__)
-    return "x86_64-linux";
+    // Fall back to compile-time platform detection (OS-first ordering)
+#if defined(__APPLE__)
+    #if defined(__aarch64__)
+        return "arm64-macos";
+    #else
+        return "x86_64-macos";
+    #endif
+#elif defined(_WIN32)
+    #if defined(__aarch64__) || defined(_M_ARM64)
+        return "arm64-windows";
+    #else
+        return "x86_64-windows";
+    #endif
+#elif defined(__linux__)
+    #if defined(__aarch64__)
+        return "aarch64-linux";
+    #elif defined(__x86_64__)
+        return "x86_64-linux";
+    #else
+        return "unknown-linux";
+    #endif
 #else
     return "unknown-platform";
 #endif

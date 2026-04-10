@@ -24,7 +24,7 @@ protected:
 
 TEST_F(CSVOutputTest, CreateFile) {
     CSVOutput csv(test_file_);
-    EXPECT_TRUE(csv.file_.is_open());
+    EXPECT_TRUE(csv.is_open());
 }
 
 TEST_F(CSVOutputTest, WriteHeader) {
@@ -139,7 +139,7 @@ TEST_F(CSVOutputTest, HeaderNotDuplicate) {
 TEST_F(CSVOutputTest, CloseFile) {
     {
         CSVOutput csv(test_file_);
-        EXPECT_TRUE(csv.is_open_);
+        EXPECT_TRUE(csv.is_open());
     }
     // After closing, file should still exist but stream is closed
     EXPECT_TRUE(std::ifstream(test_file_).good());
