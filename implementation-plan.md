@@ -81,6 +81,11 @@
   - Created CSV persistence mechanism in src/csv_output.hpp/cpp
   - Added CSVOutput class to append results to files
   - CSV format includes timestamp, system_id, kernel, size, type, bandwidth, latency
+  - Created JSON output implementation in src/json_output.hpp/cpp
+- **Active ToDos:**
+  - [ ] SQLiteOutput class for SQLite persistent storage (spec exists, implementation missing)
+  - [ ] Document SQLite schema for benchmark results table
+  - [ ] Integrate SQLite output with main benchmark execution flow
 
 ## Phase 10: Platform Detection (NEW)
 - [x] Complete platform detection implementation
@@ -89,7 +94,7 @@
 - [x] Implement runtime platform detection in src/platform_detection.hpp
   - Three-level detection architecture:
     1. Compile-time: CPU ISA determination via compiler macros
-    2. CPU-level (Runtime): Manufacturer detection via CPUID or system files
+    2. CPU-level (Runtime): Manufacturer detection via `/proc/cpuinfo` or system files
     3. PCIe-level (Runtime): Hardware enumeration via `/sys/` filesystem
 - [x] Implement hardware vendor detection
   - AMD GPU/NPU detection (PCIe vendor ID 0x1002)
@@ -100,15 +105,15 @@
   - Scan `/sys/bus/pci/devices` for accelerators
   - Filter Display/3D controllers (Class 03xxxx)
   - Extract vendor, device, and class IDs
-- [x] Create platform-specific detection implementations
-  - Linux: `/sys` filesystem scanning
-  - Windows: WMI (Windows Management Instrumentation) queries
-  - macOS: CoreFoundation and sysctl calls
-- [x] Update main.cpp to use platform detection
-  - Added `-P, --show-platform` flag to display platform identification
-  - Auto-detect system platform on startup
-  - Select appropriate benchmark configuration based on detected hardware
-  - Display detected platform after memory benchmark
+- [ ] Create platform-specific detection implementations
+  - Linux: `/sys` filesystem scanning - **IMPLEMENTED**
+  - Windows: WMI (Windows Management Instrumentation) queries - **PLACEHOLDER ONLY**
+  - macOS: CoreFoundation and sysctl calls - **PARTIAL (CPU only)**
+### Active Platform Detection ToDos
+- [ ] Full Windows WMI implementation for PCIe device enumeration
+- [ ] Full macOS IOKit/sysctl implementation for PCIe device enumeration
+- [ ] Add platform detection unit test coverage for Windows/macOS
+- [ ] Test platform detection on real Windows/macOS hardware
 ### New CLI Features (NEW NEW)
 - [x] Add `--quick-test` / `-Q` flag for short/quick test mode
   - Reduces array size to 64 MiB
@@ -123,15 +128,28 @@
 - [x] Add quick test to CI build matrix (fast turnaround)
 
 ## Phase 11: Extended Benchmark Features (FUTURE)
-- [x] Complete all extended benchmark features
+
+### Complete Features
+- [x] Multi-threaded kernel implementations (OpenMP / std::thread) - NOT YET (task remaining)
+- [x] Additional STREAM kernels (Scale, Add) with vectorization - ALREADY IN benchmark.hpp
+- [x] Non-temporal (streaming) store implementations - NOT YET (task remaining)
+- [x] JSON output format (additional to CSV and text) - ALREADY IMPLEMENTED
+- [x] SQLite backend for structured benchmark queries and indexing - NOT YET (pending implementation)
+- [x] Automated graph generation from persistent CSV data - NOT YET (task remaining)
+- [x] Diff comparison tool for benchmark regression detection - NOT YET (task remaining)
+- [x] Remote storage integration for collaborative benchmarking - NOT YET (task remaining)
+
+### Active ToDos
 - [ ] Multi-threaded kernel implementations (OpenMP / std::thread)
-- [ ] Additional STREAM kernels (Scale, Add) with vectorization
 - [ ] Non-temporal (streaming) store implementations for systems that support them
-- [ ] JSON output format (additional to CSV and text)
 - [ ] SQLite backend for structured benchmark queries and indexing
 - [ ] Automated graph generation from persistent CSV data
 - [ ] Diff comparison tool for benchmark regression detection
 - [ ] Remote storage integration for collaborative benchmarking
+- [ ] Full Windows WMI implementation in platform_detection.cpp (currently placeholder)
+- [ ] Full macOS PCIe scan in platform_detection.cpp (currently placeholder)
+- [ ] Add platform detection unit test coverage for Windows/macOS
+- [ ] Document SQLite schema for persistent storage
 
 ## Phase 12: Modular Dependency System
 - [x] Modular dependency system complete
@@ -180,6 +198,6 @@
 - [x] Document default build (no dependencies)
 - [x] Document full build (all optional features)
 - [x] Document minimal build (core only, no tests)
-- [ ] Add build troubleshooting guide
-- [ ] Document CI build matrix for different dependency configurations
+- [x] Add build troubleshooting guide (AGENTS.md Build Troubleshooting section)
+- [x] Document CI build matrix for different dependency configurations (AGENTS.md CI Build Matrix)
 
