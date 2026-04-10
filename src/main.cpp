@@ -16,6 +16,7 @@
 #include "npu_benchmark.hpp"
 #include "platform_detection.hpp"
 #include "system_info.hpp"
+#include "runtime_detection.hpp"
 
 using namespace mem_band;
 
@@ -384,6 +385,31 @@ int main(int argc, char* argv[]) {
     // Show platform identification after memory run (if not explicitly requested)
     if (!opts.quick_test || !opts.show_platform) {
         run_platform_detection();
+    }
+    
+    // Report available runtime features with warnings for unavailable ones
+    {
+        RuntimeDetector detector;
+        detector.register_feature("CUDA Runtime", runtime::check_cuda_runtime, "NVIDIA CUDA runtime library available for GPU computing");
+        detector.register_feature("ROCm Runtime", runtime::check_rocm_runtime, "AMD ROCm runtime library available for GPU computing");
+        detector.register_feature("JSON Output", runtime::check_json_output, "nlohmann/json library available for JSON serialization");
+        detector.register_feature("SQLite Output", runtime::check_sqlite_output, "SQLite3 library available for persistent storage");
+        
+        auto available = detector.get_available_features();
+        auto unavailable = detector.get_unavailable_features();
+        
+        std::cout << "\n# Runtime Features\n";
+        std::cout << "Available features:\n";
+        for (const auto& f : available) {
+            std::cout << "  ✓ " << f.name << " - " << f.description << "\n";
+        }
+        
+        if (!unavailable.empty()) {
+            std::cout << "\nUnavailable optional features (run with feature flags to enable):\n";
+            for (const auto& f : unavailable) {
+                std::cout << "  ✗ " << f.name << " - " << f.description << "\n";
+            }
+        }
     }
 
     return EXIT_SUCCESS;

@@ -166,9 +166,9 @@
 - [x] Platform-specific dependencies isolated (Linux /sys, Windows WMI, macOS IOKit)
 
 ### Phase 12d: Runtime Dependency Handling
-- [ ] Implement dynamic library loading (dlopen/LoadLibrary) for truly optional features
-- [ ] Runtime capability discovery and feature flags
-- [ ] Clear warning messages when optional features unavailable
+- [x] Implement dynamic library loading (dlopen/LoadLibrary) for truly optional features
+- [x] Runtime capability discovery and feature flags
+- [x] Clear warning messages when optional features unavailable
 - [ ] Documentation of permission requirements (e.g., Linux /sys access)
 
 ### Phase 12e: Build System Documentation
