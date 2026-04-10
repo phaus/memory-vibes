@@ -659,11 +659,11 @@ Add CLI flags to generate ASCII diagrams showing CPU/Memory/PCIe device layout f
 ### Priority Order
 
 1. **High Priority:**
-   - Layout data structures and core builder class
-   - Text-based ASCII output format
+   - Layout data structures and core builder class - IMPLEMENTED
+   - Text-based ASCII output format - IMPLEMENTED
    - Integration with existing platform detection
-    - **`-L, --system-layout` flag for layout display**
-   - **Runtime environment detection for automatic layout selection**
+    - **`-L, --system-layout` flag for layout display** - PENDING CLI integration
+   - **Runtime environment detection for automatic layout selection** - PENDING
 
 2. **Medium Priority:**
    - Mermaid.js output for documentation
