@@ -151,6 +151,138 @@
 - [ ] Add platform detection unit test coverage for Windows/macOS
 - [ ] Document SQLite schema for persistent storage
 
+## Phase 13: Persistence Layer Enhancement
+
+### Existing Persistence
+- [x] CSV output already implemented in `src/csv_output.hpp/cpp`
+- [x] JSON output already implemented in `src/json_output.hpp/cpp`
+- [x] System identifier collection in `src/system_info.cpp`
+- [x] SQLite3 support enabled via CMake flag `ENABLE_SQLITE_OUTPUT`
+
+### New Command-Line Features Needed
+
+#### Database Commands
+- [ ] `--list-benchmarks` / `-L` - List all benchmark runs in database with filtering options:
+  - Filter by system ID
+  - Filter by date range
+  - Filter by kernel type
+  - Sort by timestamp/bandwidth
+- [ ] `--search <pattern>` / `-F <pattern>` - Search benchmark results by:
+  - System ID substring
+  - Kernel name
+  - Date range
+  - Bandwidth range
+- [ ] `--export-db <format> <output>` - Export database to CSV/JSON:
+  - `--export-db csv output.csv`
+  - `--export-db json output.json`
+
+#### Database Schema (SQLite)
+```sql
+CREATE TABLE benchmarks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    timestamp TEXT NOT NULL,
+    system_id TEXT NOT NULL,
+    kernel TEXT NOT NULL,
+    size_mib INTEGER NOT NULL,
+    data_type TEXT NOT NULL,
+    iterations INTEGER NOT NULL,
+    bandwidth_gb_s REAL NOT NULL,
+    time_seconds REAL NOT NULL,
+    bytes_per_iter INTEGER NOT NULL,
+    cpu_model TEXT,
+    os_name TEXT,
+    os_version TEXT,
+    FOREIGN KEY (system_id) REFERENCES systems(system_id)
+);
+
+CREATE TABLE systems (
+    system_id TEXT PRIMARY KEY,
+    cpu_model TEXT,
+    core_count INTEGER,
+    memory_size_mb INTEGER,
+    os_name TEXT,
+    os_version TEXT,
+    platform TEXT,
+    created_at TEXT NOT NULL
+);
+
+CREATE INDEX idx_timestamp ON benchmarks(timestamp);
+CREATE INDEX idx_system_id ON benchmarks(system_id);
+CREATE INDEX idx_kernel ON benchmarks(kernel);
+```
+
+### Implementation Tasks
+
+#### SQLite Persistence
+- [ ] Create `src/sqlite_output.hpp` with `SQLiteOutput` class
+- [ ] Implement `src/sqlite_output.cpp` with:
+  - Database initialization and connection management
+  - Schema creation (systems + benchmarks tables)
+  - Insert benchmark results with system info
+  - Query methods for listing/searching
+- [ ] Create `src/sqlite_input.hpp` with `SQLiteInput` class for reading
+- [ ] Implement `src/sqlite_input.cpp` with:
+  - Database connection and query execution
+  - Result set parsing into `BenchmarkResult` structs
+
+#### Command-Line Integration
+- [ ] Add database path option to `Options` struct (default: `~/.mem_band/benchmarks.db`)
+- [ ] Implement `--list-benchmarks` / `-L` flag in `main.cpp`
+- [ ] Implement `--search` / `-F` flag with pattern matching
+- [ ] Implement `--export-db` flag for format conversion
+- [ ] Update `print_usage()` to document new database commands
+- [ ] Handle SQLite compilation with `#ifdef ENABLE_SQLITE`
+
+#### Database Browsing CLI Examples
+```bash
+# List all benchmarks
+./mem_band --list-benchmarks
+
+# List Copy kernel results only
+./mem_band --list-benchmarks --kernel Copy
+
+# Search by system ID
+./mem_band --search "ab12cd"
+
+# Search by kernel name
+./mem_band --search "kernel:Triad"
+
+# Export to CSV
+./mem_band --export-db csv results.csv
+
+# Export specific query to JSON
+./mem_band --search "size>512" --export-db json large_results.json
+```
+
+#### Tests
+- [ ] Add `tests/test_sqlite_output.cpp` for SQLite persistence tests
+- [ ] Add `tests/test_sqlite_input.cpp` for SQLite query tests
+- [ ] Update test suite to include database browsing functionality
+
+#### Documentation
+- [ ] Update `README.md` with new database CLI commands
+- [ ] Add `specs/database-spec.md` with full database specification
+- [ ] Document database schema and query examples
+- [ ] Add usage examples for database browsing
+
+### Priority Order
+
+1. **High Priority:**
+   - SQLite output class implementation
+   - Database schema design
+   - Basic `--list-benchmarks` command
+
+2. **Medium Priority:**
+   - `--search` command with pattern matching
+   - Export functionality
+   - Unit tests for database operations
+
+3. **Low Priority:**
+   - Advanced filtering/sorting
+   - Remote storage integration
+   - Graph generation from database
+
+
 ## Phase 12: Modular Dependency System
 - [x] Modular dependency system complete
 ### Phase 12a: Dependencies Specification
@@ -200,4 +332,234 @@
 - [x] Document minimal build (core only, no tests)
 - [x] Add build troubleshooting guide (AGENTS.md Build Troubleshooting section)
 - [x] Document CI build matrix for different dependency configurations (AGENTS.md CI Build Matrix)
+
+## Phase 13: System Layout Visualization (NEW)
+
+### Objective
+Add CLI flags to generate ASCII diagrams showing CPU/Memory/PCIe device layout for different system architectures.
+
+### CLI Flag Design
+- [ ] Add `-L, --system-layout` flag to display system layout
+- [ ] Support layout output formats:
+  - [ ] `text` (default) - ASCII diagram in terminal
+  - [ ] `mermaid` - Mermaid.js diagram code for documentation
+  - [ ] `json` - Structured layout data for external tools
+
+### Layout Content
+- [ ] **CPU Cluster**: Show CPU(s), cores, cache hierarchy (L1/L2/L3)
+- [ ] **Memory subsystem**: Show total memory, memory channels, bandwidth
+- [ ] **PCIe devices**: List all PCIe devices with:
+  - [ ] Vendor/device IDs
+  - [ ] Device type (GPU/NPU/accelerator)
+  - [ ] PCIe slot/bandwidth information
+  - [ ] Link generation/speed
+
+### Architecture-Specific Layouts
+
+#### NVIDIA GB10 (Coherent ARM)
+```ascii
+┌─────────────────────────────────────────────────────────────┐
+│                    NVIDIA GB10 (Grace+Blackwell)            │
+│                    Coherent ARM Architecture                │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌─────────────┐                                           │
+│  │   Grace H5  │───────────────┐                           │
+│  │   ARM CPU   │  NVLink-C2C   │                           │
+│  │   72-core   │   (800 GB/s)  │                           │
+│  └─────────────┘               │                           │
+│                                │                           │
+│  ┌─────────────┐               │                           │
+│  │ Blackwell H1 │──────────────┘                           │
+│  │   GPU       │                                          │
+│  │   144-warps │                                          │
+│  │  LPDDR5X    │←───────1 TB/s (unified memory)───────────┤
+│  └─────────────┘                                          │
+│                                                           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### AMD Strix Halo (Shared x86)
+```ascii
+┌─────────────────────────────────────────────────────────────┐
+│                        AMD Strix Halo                       │
+│                      Shared x86 Architecture                │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    │
+│  │   Zen 5     │────│  Shared     │────│   RDNA 3.5  │    │
+│  │   CPU       │    │   MIPI      │    │   iGPU      │    │
+│  │   16-core   │    │   Interconnect│  │   Graphics  │    │
+│  │   L3 Cache  │    │  (400 GB/s) │    │   (12 CU)   │    │
+│  └─────────────┘    └─────────────┘    └─────────────┘    │
+│                                │                           │
+│  ┌─────────────┐              │                           │
+│  │  PCIe Gen5  │              │                           │
+│  │   Slots     │              │                           │
+│  │   (x16)     │              │                           │
+│  └─────────────┘              │                           │
+│                                │                           │
+│  ┌─────────────┐              │                           │
+│  │  LPDDR5X    │←─────500 GB/s (shared memory)────────────┤
+│  └─────────────┘                                          │
+│                                                           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### NVIDIA RTX 3090 (Discrete x86)
+```ascii
+┌─────────────────────────────────────────────────────────────┐
+│                       NVIDIA RTX 3090                       │
+│                     Discrete x86 Architecture               │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌─────────────┐          ┌─────────────┐                  │
+│  │   x86 Host  │◄────────►│  RTX 3090   │                  │
+│  │   CPU       │   PCIe   │   GPU       │                  │
+│  │   8+Core    │   Gen4   │   Ampere    │                  │
+│  │             │   (32 GB/s)│  829 CUDA │                  │
+│  └─────────────┘          │  24GB GDDR6X│                  │
+│                           │  384-bit    │←──936 GB/s───────┤
+│                           └─────────────┘                  │
+│                                                           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Apple Mac Studio (Unified ARM)
+```ascii
+┌─────────────────────────────────────────────────────────────┐
+│                       Apple Mac Studio                      │
+│                      Unified ARM Architecture               │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌─────────────────────────────────────────────┐          │
+│  │         M-Series Ultra/Max                  │          │
+│  │         (SoC)                               │          │
+│  │                                             │          │
+│  │  ┌─────────┐  ┌───────┐  ┌──────────────┐  │          │
+│  │  │  CPU    │──│Memory │──│   GPU        │  │          │
+│  │  │  12-24  │  │Unified│  │   24-40      │  │          │
+│  │  │  cores  │  │ 80-128│  │   cores      │  │          │
+│  │  │         │  │  GB/s   │  │            │  │          │
+│  │  └─────────┘  └───────┘  └──────────────┘  │          │
+│  │                                             │          │
+│  │  ┌─────────┐  ┌───────┐  ┌──────────────┐  │          │
+│  │  │  NPU    │──│       │──│   Media      │  │          │
+│  │  │  16-core│  │       │  │   Engine     │  │          │
+│  │  └─────────┘  │       │  └──────────────┘  │          │
+│  │                │       │                    │          │
+│  │                └───────┘                    │          │
+│  │                                             │          │
+│  │              ┌─────────────┐               │          │
+│  │              │  PCIe/USB   │               │          │
+│  │              │  controllers│               │          │
+│  │              └─────────────┘               │          │
+│  └─────────────────────────────────────────────┘          │
+│                             │                             │
+│  ┌──────────────────────────┼─────────────────────────────┤
+│  │        LPDDR5            │     ~800 GB/s                │
+│  └──────────────────────────┘                             │
+│                                                           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Implementation Tasks
+
+#### Phase 13a: Layout Data Structures
+- [ ] Create `src/layout_builder.hpp` with layout data structures
+  - [ ] `SystemNode` - Base class for CPU, Memory, Device nodes
+  - [ ] `CPUNode` - CPU cluster with cores and cache
+  - [ ] `MemoryNode` - Memory subsystem
+  - [ ] `PCIEDeviceNode` - PCIe device with bandwidth info
+  - [ ] `Connection` - Link between nodes with bandwidth
+
+#### Phase 13b: Layout Generation
+- [ ] Implement `src/layout_builder.cpp`:
+  - [ ] Build CPU cluster from `SystemInfo` (cores, cache)
+  - [ ] Build memory layout from `SystemInfo` (size, channels)
+  - [ ] Build PCIe device tree from `PlatformDetection` results
+  - [ ] Connect nodes based on interconnect type (NVLink, PCIe, etc.)
+
+#### Phase 13c: Output Formats
+- [ ] Implement text formatter (ASCII box-drawing diagrams)
+- [ ] Implement Mermaid.js formatter (for documentation)
+- [ ] Implement JSON formatter (for programmatic use)
+
+#### Phase 13d: Integrated View & Run Mode
+- [ ] Add `-L, --system-layout` to display system layout (with optional `--run-benchmark` to then execute)
+- [ ] Detect runtime environment to determine default layout type:
+  - [ ] Linux with NVIDIA GPU → Show GB10-style layout (if detected)
+  - [ ] Linux with AMD GPU/NPU → Show Strix Halo-style layout
+  - [ ] macOS → Show Mac Studio-style layout
+  - [ ] Windows with discrete GPU → Show RTX 3090-style layout
+- [ ] Allow manual layout override with `--layout-type <type>` flag:
+  - [ ] `gb10`, `strix`, `rtx3090`, `macstudio`, `generic`
+- [ ] Support layout update mode with `--update-layout` flag (re-scan hardware)
+- [ ] Implement layout cache for faster subsequent runs
+- [ ] Show layout preview before benchmark selection (interactive mode)
+
+#### Phase 13e: Runtime Detection Integration
+- [ ] Enhance `platform_detection.hpp` with layout-relevant methods:
+  - [ ] `GetInterconnectType()` - Returns NVLink/PCIe/InternalBus/None
+  - [ ] `GetMemoryTopology()` - Returns unified/shared/discrete
+  - [ ] `GetPCIeBandwidth()` - Returns PCIe generation × lanes
+- [ ] Auto-detect system archetype from hardware:
+  - [ ] Check CPU vendor + GPU vendor combination
+  - [ ] Check interconnect presence (NVLink, internal bus)
+  - [ ] Map to known archetypes (GB10, Strix, RTX 3090, Mac Studio)
+
+#### Phase 13f: Layout Builder Enhancements
+- [ ] Add automatic archetype selection based on runtime detection
+- [ ] Build layout dynamically from system info + platform detection
+- [ ] Support partial layouts (e.g., missing GPU info)
+- [ ] Add layout validation (consistency checks for connectivity)
+
+#### Phase 13g: Platform Detection Integration
+- [ ] Detect interconnect type (NVLink, PCIe, internal bus)
+- [ ] Extract PCIe link generation (Gen1-Gen6)
+- [ ] Extract memory channel count and bandwidth
+- [ ] Handle ARM vs x86 platform differences
+
+#### Phase 13h: CLI Integration
+- [ ] Add `-L, --system-layout` flag to `Options` struct
+- [ ] Add `--layout-format` subflag for output format selection (text/mermaid/json)
+- [ ] Add `--layout-type` manual override flag
+- [ ] Add `--update-layout` for layout refresh
+- [ ] Update `print_usage()` with `-L, --system-layout` options
+- [ ] Support `--run-benchmark` flag for post-layout execution
+- [ ] Handle layout display and benchmark execution flow
+
+#### Phase 13i: Testing
+- [ ] Add `tests/test_layout_builder.cpp` for unit tests
+- [ ] Test layout generation on different hardware configurations
+- [ ] Test layout caching behavior
+- [ ] Test `-L, --system-layout` flow end-to-end
+- [ ] Verify automatic archetype detection accuracy
+
+#### Phase 13j: Documentation
+- [ ] Update README.md with new layout CLI documentation
+- [ ] Add examples showing layout output for different platforms
+- [ ] Document Mermaid output for documentation generation
+- [ ] Document `-L, --system-layout` workflow
+- [ ] Add system archetype identification guide
+
+### Priority Order
+
+1. **High Priority:**
+   - Layout data structures and core builder class
+   - Text-based ASCII output format
+   - Integration with existing platform detection
+    - **`-L, --system-layout` flag for layout display**
+   - **Runtime environment detection for automatic layout selection**
+
+2. **Medium Priority:**
+   - Mermaid.js output for documentation
+   - JSON format for external tools
+   - Automatic archetype detection from hardware
+   - Layout caching for performance
+
+3. **Low Priority:**
+   - Advanced layout customization options
+   - Layout comparison/diff functionality
+   - Interactive layout exploration tools
 
