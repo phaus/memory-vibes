@@ -61,6 +61,11 @@ bool check_cuda_runtime() {
     if (libs.empty()) {
         libs = loader.find_libraries("libcudart.so", paths);
     }
+#ifdef __APPLE__
+    if (libs.empty()) {
+        libs = loader.find_libraries("libcudart.dylib", paths);
+    }
+#endif
     return !libs.empty();
 }
 
@@ -78,6 +83,11 @@ bool check_rocm_runtime() {
     if (libs.empty()) {
         libs = loader.find_libraries("libamdhip64.so", paths);
     }
+#ifdef __APPLE__
+    if (libs.empty()) {
+        libs = loader.find_libraries("libamdhip64.dylib", paths);
+    }
+#endif
     return !libs.empty();
 }
 
@@ -90,6 +100,11 @@ bool check_json_output() {
     if (libs.empty()) {
         libs = loader.find_libraries("libnlohmann_json.so", paths);
     }
+#ifdef __APPLE__
+    if (libs.empty()) {
+        libs = loader.find_libraries("libnlohmann_json.dylib", paths);
+    }
+#endif
     return !libs.empty();
 }
 
@@ -102,6 +117,11 @@ bool check_sqlite_output() {
     if (libs.empty()) {
         libs = loader.find_libraries("libsqlite3.so", paths);
     }
+#ifdef __APPLE__
+    if (libs.empty()) {
+        libs = loader.find_libraries("libsqlite3.dylib", paths);
+    }
+#endif
     return !libs.empty();
 }
 
