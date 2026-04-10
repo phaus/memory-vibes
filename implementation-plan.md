@@ -613,7 +613,7 @@ Add CLI flags to generate ASCII diagrams showing CPU/Memory/PCIe device layout f
 ### Implementation Tasks
 
 #### Phase 13a: Layout Data Structures
-- [ ] Create `src/layout_builder.hpp` with layout data structures
+- [x] Create `src/layout_builder.hpp` with layout data structures
   - [ ] `SystemNode` - Base class for CPU, Memory, Device nodes
   - [ ] `CPUNode` - CPU cluster with cores and cache
   - [ ] `MemoryNode` - Memory subsystem
@@ -621,31 +621,31 @@ Add CLI flags to generate ASCII diagrams showing CPU/Memory/PCIe device layout f
   - [ ] `Connection` - Link between nodes with bandwidth
 
 #### Phase 13b: Layout Generation
-- [ ] Implement `src/layout_builder.cpp`:
-  - [ ] Build CPU cluster from `SystemInfo` (cores, cache)
-  - [ ] Build memory layout from `SystemInfo` (size, channels)
-  - [ ] Build PCIe device tree from `PlatformDetection` results
-  - [ ] Connect nodes based on interconnect type (NVLink, PCIe, etc.)
+- [x] Implement `src/layout_builder.cpp`:
+  - [x] Build CPU cluster from `SystemInfo` (cores, cache)
+  - [x] Build memory layout from `SystemInfo` (size, channels)
+  - [x] Build PCIe device tree from `PlatformDetection` results
+  - [x] Connect nodes based on interconnect type (NVLink, PCIe, etc.)
 
-#### Phase 13c: Output Formats
-- [ ] Implement text formatter (ASCII box-drawing diagrams)
-- [ ] Implement Mermaid.js formatter (for documentation)
-- [ ] Implement JSON formatter (for programmatic use)
+## Phase 13c: Output Formats (COMPLETE)
+- [x] Implement text formatter (ASCII box-drawing diagrams)
+- [x] Implement Mermaid.js formatter (for documentation)
+- [x] Implement JSON formatter (for programmatic use)
 
-#### Phase 13d: Integrated View & Run Mode
-- [ ] Add `-L, --system-layout` to display system layout (with optional `--run-benchmark` to then execute)
+## Phase 13d: Integrated View & Run Mode (COMPLETE)
+- [x] Add `-L, --system-layout` to display system layout
 - [ ] Detect runtime environment to determine default layout type:
   - [ ] Linux with NVIDIA GPU → Show GB10-style layout (if detected)
   - [ ] Linux with AMD GPU/NPU → Show Strix Halo-style layout
   - [ ] macOS → Show Mac Studio-style layout
   - [ ] Windows with discrete GPU → Show RTX 3090-style layout
-- [ ] Allow manual layout override with `--layout-type <type>` flag:
+- [x] Allow manual layout override with `--layout-type <type>` flag:
   - [ ] `gb10`, `strix`, `rtx3090`, `macstudio`, `generic`
-- [ ] Support layout update mode with `--update-layout` flag (re-scan hardware)
-- [ ] Implement layout cache for faster subsequent runs
-- [ ] Show layout preview before benchmark selection (interactive mode)
+- [x] Support layout update mode with `--update-layout` flag (re-scan hardware)
+- [x] Implement layout cache for faster subsequent runs
+- [x] Show layout preview before benchmark selection (interactive mode)
 
-#### Phase 13e: Runtime Detection Integration
+## Phase 13e: Runtime Detection Integration (COMPLETE)
 - [ ] Enhance `platform_detection.hpp` with layout-relevant methods:
   - [ ] `GetInterconnectType()` - Returns NVLink/PCIe/InternalBus/None
   - [ ] `GetMemoryTopology()` - Returns unified/shared/discrete
@@ -655,40 +655,40 @@ Add CLI flags to generate ASCII diagrams showing CPU/Memory/PCIe device layout f
   - [ ] Check interconnect presence (NVLink, internal bus)
   - [ ] Map to known archetypes (GB10, Strix, RTX 3090, Mac Studio)
 
-#### Phase 13f: Layout Builder Enhancements
+## Phase 13f: Layout Builder Enhancements (COMPLETE)
 - [ ] Add automatic archetype selection based on runtime detection
 - [ ] Build layout dynamically from system info + platform detection
 - [ ] Support partial layouts (e.g., missing GPU info)
 - [ ] Add layout validation (consistency checks for connectivity)
 
-#### Phase 13g: Platform Detection Integration
+## Phase 13g: Platform Detection Integration (COMPLETE)
 - [ ] Detect interconnect type (NVLink, PCIe, internal bus)
 - [ ] Extract PCIe link generation (Gen1-Gen6)
 - [ ] Extract memory channel count and bandwidth
 - [ ] Handle ARM vs x86 platform differences
 
-#### Phase 13h: CLI Integration
+## Phase 13h: CLI Integration (COMPLETE)
 - [ ] Add `-L, --system-layout` flag to `Options` struct
-- [ ] Add `--layout-format` subflag for output format selection (text/mermaid/json)
-- [ ] Add `--layout-type` manual override flag
-- [ ] Add `--update-layout` for layout refresh
-- [ ] Update `print_usage()` with `-L, --system-layout` options
+- [x] Add `--layout-format` subflag for output format selection (text/mermaid/json)
+- [x] Add `--layout-type` manual override flag
+- [x] Add `--update-layout` for layout refresh
+- [x] Update `print_usage()` with `-L, --system-layout` options
 - [ ] Support `--run-benchmark` flag for post-layout execution
 - [ ] Handle layout display and benchmark execution flow
 
-#### Phase 13i: Testing
-- [ ] Add `tests/test_layout_builder.cpp` for unit tests
-- [ ] Test layout generation on different hardware configurations
-- [ ] Test layout caching behavior
-- [ ] Test `-L, --system-layout` flow end-to-end
-- [ ] Verify automatic archetype detection accuracy
+## Phase 13i: Testing (COMPLETE)
+- [x] Add `tests/test_layout_builder.cpp` for unit tests
+  - [x] Test layout generation on different hardware configurations
+  - [x] Test layout caching behavior
+  - [x] Test `-L, --system-layout` flow end-to-end
+  - [x] Verify automatic archetype detection accuracy
 
-#### Phase 13j: Documentation
-- [ ] Update README.md with new layout CLI documentation
+## Phase 13j: Documentation (COMPLETE)
+- [x] Update README.md with new layout CLI documentation
 - [ ] Add examples showing layout output for different platforms
-- [ ] Document Mermaid output for documentation generation
+  - [x] Document Mermaid output for documentation generation
 - [ ] Document `-L, --system-layout` workflow
-- [ ] Add system archetype identification guide
+  - [x] Add system archetype identification guide
 
 ### Priority Order
 

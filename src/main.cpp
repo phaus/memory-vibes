@@ -18,6 +18,7 @@
 #include "system_info.hpp"
 #include "runtime_detection.hpp"
 #include "json_output.hpp"
+#include "layout_builder.hpp"
 
 using namespace mem_band;
 
@@ -40,6 +41,8 @@ struct Options {
     bool show_platform = false;     // Display platform identification
     bool json_output = false;       // Output results in JSON format
     std::string json_filename = "benchmark_results.json"; // JSON output filename
+    bool system_layout = false;     // Display system layout
+    std::string layout_format = "text"; // Layout output format: text, mermaid, json
 };
 
 void print_usage(const char* prog) {
@@ -63,6 +66,8 @@ void print_usage(const char* prog) {
                << "  -Q, --quick-test       Run quick/short test (smaller size, fewer iterations)\n"
                << "  -J, --json-output      Output results in JSON format\n"
                << "  --json-file <path>     JSON output filename (default: benchmark_results.json)\n"
+               << "  -L, --system-layout    Display system layout (CPU/Memory/PCIe)\n"
+               << "  --layout-format <fmt>  Layout format: text, mermaid, json (default: text)\n"
                << "  -h, --help             Show this help message\n";
 }
 
@@ -74,6 +79,17 @@ bool parse_args(int argc, char* argv[], Options& opts) {
         else if (a == "-s" || a == "--size") {
             if (i + 1 >= args.size()) { std::cerr << "Missing value for " << a << "\n"; return false; }
             opts.sizeMiB = std::stoul(args[++i]);
+        }
+        else if (a == "-L" || a == "--system-layout") {
+            opts.system_layout = true;
+        }
+        else if (a == "--layout-format") {
+            if (i + 1 >= args.size()) { std::cerr << "Missing value for " << a << "\n"; return false; }
+            opts.layout_format = args[++i];
+            if (opts.layout_format != "text" && opts.layout_format != "mermaid" && opts.layout_format != "json") {
+                std::cerr << "Invalid layout format: " << opts.layout_format << " (must be text, mermaid, or json)\n";
+                return false;
+            }
         }
         else if (a == "-n" || a == "--iters") {
             if (i + 1 >= args.size()) { std::cerr << "Missing value for " << a << "\n"; return false; }
@@ -329,6 +345,45 @@ void run_npu_benchmark(const Options& opts) {
     }
 }
 
+void run_layout(const Options& opts) {
+    auto info = mem_band::PlatformDetection::detect();
+    auto cpu_vendor = mem_band::PlatformDetection::get_cpu_vendor();
+    auto cpu_isa = mem_band::PlatformDetection::get_cpu_isa();
+    
+    LayoutBuilder builder;
+    
+    builder.add_cpu(info.cpu_vendor + " " + cpu_isa, 8, 16);
+    
+    auto sys_info = SystemInfo::collect();
+    builder.add_memory(sys_info.memory_size_mb, 2);
+    
+    for (const auto& device : info.pci_devices) {
+        std::string device_type = "Unknown";
+        if (device.class_info.find("0300") != std::string::npos || 
+            device.class_info.find("0380") != std::string::npos) {
+            device_type = "GPU";
+        } else if (device.vendor == "1002") {
+            device_type = "NPU";
+        }
+        builder.add_pci_device(device.vendor, device.device, device_type, 16);
+    }
+    
+    auto layout = builder.build();
+    
+    std::unique_ptr<LayoutFormatter> formatter;
+    if (opts.layout_format == "text") {
+        formatter = std::make_unique<TextFormatter>();
+    } else if (opts.layout_format == "mermaid") {
+        formatter = std::make_unique<MermaidFormatter>();
+    } else if (opts.layout_format == "json") {
+        formatter = std::make_unique<JSONFormatter>();
+    }
+    
+    std::cout << "# System Layout (" << opts.layout_format << " format)\n";
+    std::cout << formatter->format(layout);
+    std::cout << "\n";
+}
+
 int main(int argc, char* argv[]) {
     Options opts;
     if (argc == 1) {
@@ -345,6 +400,12 @@ int main(int argc, char* argv[]) {
         opts.iterations = 10;
     }
 
+    // Show system layout
+    if (opts.system_layout) {
+        run_layout(opts);
+        return EXIT_SUCCESS;
+    }
+    
     // Show platform identification
     if (opts.show_platform) {
         run_platform_detection();
