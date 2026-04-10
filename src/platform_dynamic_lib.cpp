@@ -22,7 +22,7 @@ PlatformDynamicLib::LibraryHandle::~LibraryHandle() {
 void PlatformDynamicLib::LibraryHandle::close() {
     if (handle != nullptr) {
 #ifdef _WIN32
-        FreeLibrary(handle);
+        FreeLibrary(static_cast<HMODULE>(handle));
 #else
         dlclose(handle);
 #endif
@@ -64,8 +64,8 @@ PlatformDynamicLib::LibraryHandle PlatformDynamicLib::open_library(
     }
 
     if (temp_handle != nullptr) {
-        loaded_libraries_.emplace_back(temp_handle, full_path);
-        return LibraryHandle(temp_handle, full_path);
+        loaded_libraries_.emplace_back(reinterpret_cast<void*>(temp_handle), full_path);
+        return LibraryHandle(reinterpret_cast<void*>(temp_handle), full_path);
     }
 
     return LibraryHandle();
@@ -81,7 +81,7 @@ std::vector<std::string> PlatformDynamicLib::find_libraries(
 #ifdef _WIN32
         void* test = LoadLibraryA(full_path.c_str());
         if (test != nullptr) {
-            FreeLibrary(test);
+            FreeLibrary(static_cast<HMODULE>(test));
             found.push_back(full_path);
         }
 #else
@@ -97,7 +97,7 @@ std::vector<std::string> PlatformDynamicLib::find_libraries(
 #ifdef _WIN32
         void* test = LoadLibraryA(library_name.c_str());
         if (test != nullptr) {
-            FreeLibrary(test);
+            FreeLibrary(static_cast<HMODULE>(test));
             found.push_back(library_name);
         }
 #else
