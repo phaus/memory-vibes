@@ -169,7 +169,12 @@
 - [x] Implement dynamic library loading (dlopen/LoadLibrary) for truly optional features
 - [x] Runtime capability discovery and feature flags
 - [x] Clear warning messages when optional features unavailable
-- [ ] Documentation of permission requirements (e.g., Linux /sys access)
+- [x] Documentation of permission requirements (e.g., Linux /sys access)
+  - Created specs/permission-spec.md with full permission requirements
+  - Core benchmark requires no special permissions
+  - Platform detection: Linux /sys (optional video/dmi groups), Windows WMI, macOS sysctl
+  - Optional features: CUDA, ROCm, SSD I/O all work with standard user privileges
+  - Permission troubleshooting guide included
 
 ### Phase 12e: Build System Documentation
 - [x] Document default build (no dependencies)

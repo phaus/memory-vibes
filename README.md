@@ -7,6 +7,7 @@ A tiny, portable utility that measures sustainable memory bandwidth on Linux, ma
 📄 **Detailed benchmark specification:** [specs/benchmark-spec.md](./specs/benchmark-spec.md)
 📄 **System identifier & persistence spec:** [specs/system-identifier-spec.md](./specs/system-identifier-spec.md)
 📄 **Hardware test lab spec:** [specs/hardware-test-lab-spec.md](./specs/hardware-test-lab-spec.md)
+📄 **Permission requirements spec:** [specs/permission-spec.md](./specs/permission-spec.md)
 
 ## Overview
 The program implements the following benchmarks:
