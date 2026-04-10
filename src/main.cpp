@@ -341,8 +341,8 @@ int main(int argc, char* argv[]) {
 
     // Quick test mode: reduce size and iterations
     if (opts.quick_test) {
-        opts.sizeMiB = 64;
-        opts.iterations = 5;
+        opts.sizeMiB = 128;
+        opts.iterations = 10;
     }
 
     // Show platform identification

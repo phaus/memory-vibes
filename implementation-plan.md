@@ -234,8 +234,22 @@
 - **macOS**: CPU detection via `sysctlbyname()` works; PCI enumeration pending (IOKit/sysctl needed)
 - **Windows**: CPU detection is placeholder; PCI enumeration pending (WMI needed)
 
+### Platform Detection Enhancement (NEW)
+- [ ] `run_platform_detection()` function in `src/main.cpp` needs enhancement
+- [ ] Show Architecture (currently missing: arm64/x86_64)
+- [ ] Show OS name and version (currently missing)
+- [ ] Show Memory size (currently missing)
+- [ ] Show CPU model (currently missing)
+- [ ] Show Disk size (new feature)
+- [ ] Integrate with `SystemInfo` class for comprehensive system reporting
+- [ ] Update `PlatformInfo` struct to include architecture, OS, memory fields
+- [ ] Add `detect_disk_size()` function for storage information
+- [ ] Platform detection output format should match `SystemInfo::print()` layout
+
 ### New CLI Features (NEW NEW)
 - [x] Add `--quick-test` / `-Q` flag for short/quick test mode
+  - Updated to use reasonable defaults (128 MiB, 10 iterations) instead of hardcoded 64 MiB/5 iterations
+  - Aligns with medium test defaults but with smaller size for faster execution
 - [x] Add `--show-platform` / `-P` flag for platform identification display
 - [x] Document new flags in README.md
 - [x] Test quick test mode across all platforms
@@ -673,6 +687,31 @@ Add CLI flags to generate ASCII diagrams showing CPU/Memory/PCIe device layout f
 
 3. **Low Priority:**
    - Advanced layout customization options
-   - Layout comparison/diff functionality
-   - Interactive layout exploration tools
+    - Layout comparison/diff functionality
+    - Interactive layout exploration tools
+
+### Active ToDos - Platform Detection Enhancement
+
+- [ ] Enhance `run_platform_detection()` in `src/main.cpp` to show comprehensive system information
+- [ ] Add Architecture field to platform detection output (arm64/x86_64)
+- [ ] Add OS name and version to platform detection output
+- [ ] Add Memory size (total system memory) to platform detection output
+- [ ] Add CPU model details to platform detection output
+- [ ] Add Disk size (storage capacity) to platform detection output
+- [ ] Update `PlatformInfo` struct in `platform_detection.hpp` to include:
+  - `std::string architecture`
+  - `std::string os_name`
+  - `std::string os_version`
+  - `long memory_size_mb`
+  - `std::string cpu_model`
+  - `long disk_size_gb`
+- [ ] Implement `detect_disk_size()` function in `system_info.cpp`:
+  - Linux: Parse `/proc/partitions` or use `statfs()`
+  - macOS: Use `sysctlbyname("hw.diskcount")` and disk info
+  - Windows: Use WMI to query disk capacity
+- [ ] Refactor `run_platform_detection()` to use `SystemInfo::collect()` for shared data
+- [ ] Ensure output format consistency with existing `SystemInfo::print()` layout
+- [ ] Test platform detection on Linux/macOS/Windows with all enhancements
+- [ ] Add platform detection unit tests for new fields
+
 
