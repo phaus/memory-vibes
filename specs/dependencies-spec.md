@@ -299,6 +299,85 @@ if (cuda_handle) {
 
 ---
 
+## Permission Requirements
+
+### Linux /sys Filesystem Access
+
+**Purpose**: PCIe hardware enumeration for platform detection
+
+**Required permissions**:
+- Standard POSIX file system access (read-only)
+- No root required for basic `/sys/bus/pci/devices` scanning
+- Some PCIe devices may require elevated privileges for full enumeration
+
+**Group membership** (optional, for comprehensive access):
+```bash
+# Add user to video group for GPU device access
+sudo usermod -aG video $USER
+
+# Add user to dmi group for system information
+sudo usermod -aG dmi $USER
+```
+
+**Fallback**: If `/sys` access fails:
+- Platform detection uses compile-time CPU vendor detection
+- System information collection returns partial results
+- No build-time dependency required
+
+### Windows WMI Access
+
+**Purpose**: Hardware inventory via Windows Management Instrumentation
+
+**Required permissions**:
+- Standard user privileges sufficient for WMI queries
+- No administrator rights required
+- May require PowerShell execution policy adjustment
+
+**Execution policy** (if needed):
+```powershell
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+**Fallback**: If WMI queries fail:
+- Platform detection uses CPUID-based vendor detection
+- System information collection continues with available data
+
+### macOS CoreFoundation
+
+**Purpose**: System information via CoreFoundation and sysctl
+
+**Required permissions**:
+- No special permissions required
+- Standard user access to sysctl interface
+
+**Fallback**: If sysctl calls fail:
+- Platform detection uses compiler macros
+- System information collection returns partial results
+
+### Runtime Dynamic Library Loading
+
+**Purpose**: Detect optional dependencies at runtime (CUDA, ROCm, JSON, SQLite)
+
+**Required permissions**:
+- Read access to library search paths
+- Dlopen/LoadLibrary system calls (standard user privileges)
+
+**Library search paths** (default):
+```bash
+# Linux
+/usr/lib:/usr/lib64:/usr/local/lib:$(LD_LIBRARY_PATH)
+
+# Windows
+C:\Windows\System32:$(PATH)
+```
+
+**Permissions needed**:
+- No root/admin required
+- No special security context needed
+- Standard executable permissions sufficient
+
+---
+
 ## Future Considerations
 
 1. **JSON serialization library** (rapidjson, nlohmann/json) - optional output format
@@ -307,3 +386,7 @@ if (cuda_handle) {
 4. **fmt** - better string formatting (already uses std::ostringstream)
 
 These can all be added as optional dependencies in the future without affecting core functionality.
+
+---
+
+---
