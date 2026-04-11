@@ -255,8 +255,8 @@ if(BUILD_TESTING)
         add_test(NAME SQLiteInputTest COMMAND test_sqlite_input)
     endif()
     
-add_test(NAME MemBandBasicRun COMMAND mem_band --size 8 --iters 1 --type float)
-add_test(NAME MemBandQuickTest COMMAND mem_band --quick-test)
+add_test(NAME MemBandBasicRun COMMAND mem_band memory --size 8 --iters 1 --type float)
+add_test(NAME MemBandQuickTest COMMAND mem_band memory --quick-test)
 add_test(NAME SSDSequentialWrite COMMAND test_ssd)
     
     if(CUDA_AVAILABLE OR CUDA_FOUND)

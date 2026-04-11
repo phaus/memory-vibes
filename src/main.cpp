@@ -32,36 +32,31 @@ using namespace mem_band;
 // ---------------------------------------------------------------------------
 
 struct Options {
-    // Memory benchmark settings
+    std::string benchmark = "memory";
+    std::string info_cmd;
+
     std::size_t size_mib = 256;
     std::size_t iterations = 20;
     std::string type = "float";
     bool simd = false;
     bool alu = false;
 
-    // SSD benchmark settings
-    bool ssd = false;
     std::string ssd_path = "/tmp";
     std::size_t ssd_block_size = 4096;
     bool ssd_random = false;
     bool ssd_read_only = false;
 
-    // Sub-command / mode selectors
-    bool run_apu = false;
-    bool run_npu = false;
-    bool run_npu_suite = false;
-    bool run_medium_test = false;
     bool quick_test = false;
+    bool medium_test = false;
+
     bool show_platform = false;
     bool show_runtime_features = false;
     bool system_layout = false;
     std::string layout_format = "text";
 
-    // Output settings
-    std::string output_format = "text";  // text | csv | json
-    std::string output_file;             // empty = stdout
+    std::string output_format = "text";
+    std::string output_file;
     
-    // SQLite settings (only if ENABLE_SQLITE is defined)
 #ifdef ENABLE_SQLITE
     std::string db_path = "~/.mem_band/benchmarks.db";
     bool list_benchmarks = false;
@@ -83,7 +78,22 @@ void run_sqlite_browsing(const Options& opts);
 
 void print_usage(const char* prog) {
     std::cout
-        << "Usage: " << prog << " [options]\n"
+        << "Usage: " << prog << " <benchmark> [options]\n"
+        << "\n"
+        << "Benchmarks:\n"
+        << "  memory                   Memory bandwidth benchmarks (default)\n"
+        << "  ssd                      SSD I/O benchmark\n"
+        << "  apu                      APU system identifier\n"
+        << "  npu                      NPU benchmark\n"
+        << "  npu-suite                NPU benchmark suite\n"
+        << "  info                     System information subcommands\n"
+        << "\n"
+        << "Examples:\n"
+        << "  " << prog << " memory --size 512 --iters 10\n"
+        << "  " << prog << " memory --quick-test\n"
+        << "  " << prog << " ssd --ssd-path /tmp --ssd-block 4096\n"
+        << "  " << prog << " info platform\n"
+        << "  " << prog << " info layout\n"
         << "\n"
         << "Memory benchmark options:\n"
         << "  -s, --size <MiB>           Array size in MiB (default: 256)\n"
@@ -91,30 +101,22 @@ void print_usage(const char* prog) {
         << "  -t, --type <float|double>  Data type (default: float)\n"
         << "  -S, --simd                 Enable SIMD kernels (requires build flag)\n"
         << "  -A, --alu                  Include ALU-intensive kernel\n"
+        << "  -M, --run-medium-test      Medium test (256 MiB, standard iterations)\n"
+        << "  -Q, --quick-test           Quick test (64 MiB, 5 iterations)\n"
         << "\n"
         << "SSD benchmark options:\n"
-        << "  -I, --ssd                  Run SSD I/O benchmark\n"
         << "  --ssd-path <path>          Benchmark directory (default: /tmp)\n"
         << "  --ssd-block <bytes>        Block size (default: 4096)\n"
         << "  --ssd-random               Use random I/O (default: sequential)\n"
         << "  --ssd-read-only            Read-only benchmark\n"
         << "\n"
-        << "Accelerator benchmarks:\n"
-        << "  -R, --run-apu              Collect APU system identifier info\n"
-        << "  -N, --run-npu              Run NPU benchmark\n"
-        << "  --run-npu-suite            Run full NPU suite (all precisions/ops)\n"
-        << "\n"
         << "System information:\n"
-        << "  -P, --show-platform        Show platform identification and exit\n"
-        << "  --show-features            Show available runtime features and exit\n"
-        << "  -L, --system-layout        Show system layout diagram and exit\n"
-        << "  --layout-format <fmt>      Layout format: text, mermaid, json (default: text)\n"
+        << "  info platform              Show platform identification\n"
+        << "  info features              Show available runtime features\n"
+        << "  info layout                Show system layout diagram\n"
+        << "  info layout --format <fmt> Layout format: text, mermaid, json\n"
         << "\n"
-        << "Preset modes:\n"
-        << "  -M, --run-medium-test      Medium test (256 MiB, standard iterations)\n"
-        << "  -Q, --quick-test           Quick test (64 MiB, 5 iterations)\n"
-        << "\n"
-        << "Output options:\n"
+        << "Output options (memory benchmark only):\n"
         << "  -o, --output-format <fmt>  Output format: text, csv, json (default: text)\n"
         << "  -f, --output-file <path>   Write results to file (default: stdout)\n"
         
@@ -135,33 +137,90 @@ void print_usage(const char* prog) {
 
 bool parse_args(int argc, char* argv[], Options& opts) {
     std::vector<std::string> args(argv + 1, argv + argc);
+    
+    if (args.empty()) {
+        print_usage(argv[0]);
+        return false;
+    }
+
+    std::string first = args[0];
+    
+    if (first == "-h" || first == "--help") {
+        print_usage(argv[0]);
+        return false;
+    }
+    
+    if (first == "memory") {
+        opts.benchmark = "memory";
+        args.erase(args.begin());
+    } else if (first == "ssd") {
+        opts.benchmark = "ssd";
+        args.erase(args.begin());
+    } else if (first == "apu") {
+        opts.benchmark = "apu";
+        args.erase(args.begin());
+    } else if (first == "npu") {
+        opts.benchmark = "npu";
+        args.erase(args.begin());
+    } else if (first == "npu-suite") {
+        opts.benchmark = "npu-suite";
+        args.erase(args.begin());
+    } else if (first == "info") {
+        opts.benchmark = "info";
+        args.erase(args.begin());
+        if (args.empty()) {
+            std::cerr << "Missing info subcommand. Use 'info platform', 'info features', or 'info layout'\n";
+            return false;
+        }
+        opts.info_cmd = args[0];
+        args.erase(args.begin());
+    } else {
+        opts.benchmark = first;
+        args.erase(args.begin());
+    }
+
+    auto require_value = [&](const std::string& flag) -> bool {
+        if (args.empty()) {
+            std::cerr << "Missing value for " << flag << "\n";
+            return false;
+        }
+        return true;
+    };
+    
     for (std::size_t i = 0; i < args.size(); ++i) {
         const std::string& a = args[i];
 
-        auto require_value = [&](const std::string& flag) -> bool {
+        auto advance = [&]() -> std::string {
             if (i + 1 >= args.size()) {
-                std::cerr << "Missing value for " << flag << "\n";
-                return false;
+                return "";
             }
-            return true;
+            i++;
+            return args[i];
         };
 
-        if (a == "-h" || a == "--help") {
-            print_usage(argv[0]);
-            return false;
-        }
-        // Memory benchmark
-        else if (a == "-s" || a == "--size") {
-            if (!require_value(a)) return false;
-            opts.size_mib = std::stoul(args[++i]);
+        if (a == "-s" || a == "--size") {
+            std::string val = advance();
+            if (val.empty()) {
+                std::cerr << "Missing value for " << a << "\n";
+                return false;
+            }
+            opts.size_mib = std::stoul(val);
         }
         else if (a == "-n" || a == "--iters") {
-            if (!require_value(a)) return false;
-            opts.iterations = std::stoul(args[++i]);
+            std::string val = advance();
+            if (val.empty()) {
+                std::cerr << "Missing value for " << a << "\n";
+                return false;
+            }
+            opts.iterations = std::stoul(val);
         }
         else if (a == "-t" || a == "--type") {
-            if (!require_value(a)) return false;
-            opts.type = args[++i];
+            std::string val = advance();
+            if (val.empty()) {
+                std::cerr << "Missing value for " << a << "\n";
+                return false;
+            }
+            opts.type = val;
             if (opts.type != "float" && opts.type != "double") {
                 std::cerr << "Invalid type: " << opts.type << " (must be float or double)\n";
                 return false;
@@ -169,42 +228,46 @@ bool parse_args(int argc, char* argv[], Options& opts) {
         }
         else if (a == "-S" || a == "--simd") { opts.simd = true; }
         else if (a == "-A" || a == "--alu")  { opts.alu = true; }
-        // SSD benchmark
-        else if (a == "-I" || a == "--ssd") { opts.ssd = true; }
         else if (a == "--ssd-path") {
-            if (!require_value(a)) return false;
-            opts.ssd_path = args[++i];
+            std::string val = advance();
+            if (val.empty()) {
+                std::cerr << "Missing value for " << a << "\n";
+                return false;
+            }
+            opts.ssd_path = val;
         }
         else if (a == "--ssd-block") {
-            if (!require_value(a)) return false;
-            opts.ssd_block_size = std::stoul(args[++i]);
+            std::string val = advance();
+            if (val.empty()) {
+                std::cerr << "Missing value for " << a << "\n";
+                return false;
+            }
+            opts.ssd_block_size = std::stoul(val);
         }
         else if (a == "--ssd-random")    { opts.ssd_random = true; }
         else if (a == "--ssd-read-only") { opts.ssd_read_only = true; }
-        // Accelerators
-        else if (a == "-R" || a == "--run-apu") { opts.run_apu = true; }
-        else if (a == "-N" || a == "--run-npu") { opts.run_npu = true; }
-        else if (a == "--run-npu-suite")        { opts.run_npu_suite = true; }
-        // System info
-        else if (a == "-P" || a == "--show-platform") { opts.show_platform = true; }
-        else if (a == "--show-features")               { opts.show_runtime_features = true; }
-        else if (a == "-L" || a == "--system-layout")  { opts.system_layout = true; }
         else if (a == "--layout-format") {
-            if (!require_value(a)) return false;
-            opts.layout_format = args[++i];
+            std::string val = advance();
+            if (val.empty()) {
+                std::cerr << "Missing value for " << a << "\n";
+                return false;
+            }
+            opts.layout_format = val;
             if (opts.layout_format != "text" && opts.layout_format != "mermaid" && opts.layout_format != "json") {
                 std::cerr << "Invalid layout format: " << opts.layout_format
                           << " (must be text, mermaid, or json)\n";
                 return false;
             }
         }
-        // Presets
-        else if (a == "-M" || a == "--run-medium-test") { opts.run_medium_test = true; }
+        else if (a == "-M" || a == "--run-medium-test") { opts.medium_test = true; }
         else if (a == "-Q" || a == "--quick-test")      { opts.quick_test = true; }
-        // Output
         else if (a == "-o" || a == "--output-format") {
-            if (!require_value(a)) return false;
-            opts.output_format = args[++i];
+            std::string val = advance();
+            if (val.empty()) {
+                std::cerr << "Missing value for " << a << "\n";
+                return false;
+            }
+            opts.output_format = val;
             if (opts.output_format != "text" && opts.output_format != "csv" && opts.output_format != "json") {
                 std::cerr << "Invalid output format: " << opts.output_format
                           << " (must be text, csv, or json)\n";
@@ -212,27 +275,42 @@ bool parse_args(int argc, char* argv[], Options& opts) {
             }
         }
         else if (a == "-f" || a == "--output-file") {
-            if (!require_value(a)) return false;
-            opts.output_file = args[++i];
+            std::string val = advance();
+            if (val.empty()) {
+                std::cerr << "Missing value for " << a << "\n";
+                return false;
+            }
+            opts.output_file = val;
         }
 #ifdef ENABLE_SQLITE
-        // SQLite options
         else if (a == "--db-path") {
-            if (!require_value(a)) return false;
-            opts.db_path = args[++i];
+            std::string val = advance();
+            if (val.empty()) {
+                std::cerr << "Missing value for " << a << "\n";
+                return false;
+            }
+            opts.db_path = val;
         }
         else if (a == "--list-benchmarks") { opts.list_benchmarks = true; }
         else if (a == "--search") {
-            if (!require_value(a)) return false;
+            std::string val = advance();
+            if (val.empty()) {
+                std::cerr << "Missing value for " << a << "\n";
+                return false;
+            }
             opts.search_benchmarks = true;
-            opts.search_pattern = args[++i];
+            opts.search_pattern = val;
         }
         else if (a == "--export-db") {
-            if (!require_value(a)) return false;
+            std::string val1 = advance();
+            std::string val2 = advance();
+            if (val1.empty() || val2.empty()) {
+                std::cerr << "Missing values for " << a << "\n";
+                return false;
+            }
             opts.export_db = true;
-            opts.export_format = args[++i];
-            if (!require_value(a)) return false;
-            opts.export_file = args[++i];
+            opts.export_format = val1;
+            opts.export_file = val2;
         }
 #endif
         else {
@@ -532,7 +610,7 @@ void run_apu_benchmark() {
 void run_npu_benchmark(const Options& opts) {
     mem_band::NPUConfig config;
 
-    if (opts.run_npu_suite) {
+    if (opts.benchmark == "npu-suite") {
         std::cout << "# Running NPU benchmark suite\n\n";
         auto results = mem_band::run_npu_benchmark_suite(config);
         mem_band::print_npu_suite_results(results);
@@ -599,48 +677,35 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    // Apply preset modes
     if (opts.quick_test) {
         opts.size_mib = 64;
         opts.iterations = 5;
     }
 
-    // ------------------------------------------------------------------
-    // Info-only modes (print and exit)
-    // ------------------------------------------------------------------
-
-    if (opts.system_layout) {
-        run_layout(opts);
-        return EXIT_SUCCESS;
-    }
-
-    if (opts.show_platform) {
+    if (opts.info_cmd == "platform") {
         run_platform_detection();
         return EXIT_SUCCESS;
     }
 
-    if (opts.show_runtime_features) {
+    if (opts.info_cmd == "features") {
         print_runtime_features();
         return EXIT_SUCCESS;
     }
 
-    // ------------------------------------------------------------------
-    // Accelerator benchmarks (mutually exclusive, exit after run)
-    // ------------------------------------------------------------------
+    if (opts.info_cmd == "layout") {
+        run_layout(opts);
+        return EXIT_SUCCESS;
+    }
 
-    if (opts.run_apu) {
+    if (opts.benchmark == "apu") {
         run_apu_benchmark();
         return EXIT_SUCCESS;
     }
 
-    if (opts.run_npu || opts.run_npu_suite) {
+    if (opts.benchmark == "npu" || opts.benchmark == "npu-suite") {
         run_npu_benchmark(opts);
         return EXIT_SUCCESS;
     }
-
-    // ------------------------------------------------------------------
-    // Database commands (SQLite only)
-    // ------------------------------------------------------------------
 
 #ifdef ENABLE_SQLITE
     if (opts.list_benchmarks || opts.search_benchmarks || opts.export_db) {
@@ -649,20 +714,12 @@ int main(int argc, char* argv[]) {
     }
 #endif
 
-    // ------------------------------------------------------------------
-    // SSD benchmark
-    // ------------------------------------------------------------------
-
-    if (opts.ssd) {
+    if (opts.benchmark == "ssd") {
         run_ssd_benchmark(opts);
         return EXIT_SUCCESS;
     }
 
-    // ------------------------------------------------------------------
-    // Memory bandwidth benchmark (default path)
-    // ------------------------------------------------------------------
-
-    if (opts.run_medium_test) {
+    if (opts.medium_test) {
         std::cout << "# Running medium test subset (excludes 1024 MiB stress test)\n";
     }
 
