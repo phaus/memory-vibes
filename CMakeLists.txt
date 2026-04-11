@@ -52,8 +52,17 @@ if(CHECK_FEATURES)
     
     # Check for SQLite3
     if(ENABLE_SQLITE_OUTPUT STREQUAL "ON" OR ENABLE_SQLITE_OUTPUT STREQUAL "YES")
-        find_package(SQLite3 QUIET)
-        if(SQLite3_FOUND)
+        find_path(SQLITE3_INCLUDE_DIR NAMES sqlite3.h
+            PATHS /usr/include /usr/local/include /home/philipp/sqlite_include
+        )
+        find_library(SQLITE3_LIBRARY NAMES sqlite3 libsqlite3
+            PATHS /home/philipp/sqlite_lib /usr/lib/aarch64-linux-gnu /usr/lib/arm-linux-gnueabihf /usr/lib /usr/local/lib
+        )
+        
+        if(SQLITE3_INCLUDE_DIR AND SQLITE3_LIBRARY)
+            set(SQLite3_INCLUDE_DIRS ${SQLITE3_INCLUDE_DIR})
+            set(SQLite3_LIBRARIES ${SQLITE3_LIBRARY})
+            set(SQLite3_FOUND TRUE)
             set(SQLITE_AVAILABLE ON)
             message(STATUS "SQLite3 found - SQLite persistent storage enabled")
         else()
@@ -83,6 +92,11 @@ target_include_directories(platform_detection_lib PRIVATE src)
 
 add_executable(mem_band src/main.cpp src/system_info.cpp src/csv_output.cpp src/json_output.cpp src/layout_builder.cpp)
 target_link_libraries(mem_band PRIVATE platform_detection_lib)
+
+# SQLite output (optional)
+if(SQLITE_AVAILABLE)
+    target_sources(mem_band PRIVATE src/sqlite_output.cpp)
+endif()
 
 # SIMD support (optional, disabled by default)
 if(ENABLE_SIMD)
@@ -114,6 +128,7 @@ target_include_directories(mem_band PRIVATE src)
 
 # Optional SQLite output support
 if(SQLITE_AVAILABLE)
+    target_include_directories(mem_band PRIVATE ${SQLite3_INCLUDE_DIRS})
     target_link_libraries(mem_band PRIVATE ${SQLite3_LIBRARIES})
     target_compile_definitions(mem_band PRIVATE ENABLE_SQLITE)
 endif()
@@ -161,6 +176,13 @@ if(BUILD_TESTING)
     add_executable(test_json_output tests/test_json_output.cpp)
     add_executable(test_layout_builder tests/test_layout_builder.cpp src/layout_builder.cpp)
     add_executable(test_layout_cli tests/test_layout_cli.cpp src/system_info.cpp src/layout_builder.cpp)
+    
+    # SQLite output test (only if SQLite is available)
+    if(SQLITE_AVAILABLE)
+        add_executable(test_sqlite_output tests/test_sqlite_output.cpp src/sqlite_output.cpp)
+        target_include_directories(test_sqlite_output PRIVATE src ${SQLite3_INCLUDE_DIRS})
+        target_link_libraries(test_sqlite_output PRIVATE ${SQLite3_LIBRARIES} GTest::gtest_main GTest::gtest)
+    endif()
 
     target_include_directories(test_benchmark PRIVATE src)
     target_include_directories(test_double PRIVATE src)
@@ -223,6 +245,11 @@ if(BUILD_TESTING)
     add_test(NAME JSONOutputTest COMMAND test_json_output)
     add_test(NAME LayoutBuilderTest COMMAND test_layout_builder)
     add_test(NAME LayoutCLITest COMMAND test_layout_cli)
+    
+    if(SQLITE_AVAILABLE)
+        add_test(NAME SQLiteOutputTest COMMAND test_sqlite_output)
+    endif()
+    
 add_test(NAME MemBandBasicRun COMMAND mem_band --size 8 --iters 1 --type float)
 add_test(NAME MemBandQuickTest COMMAND mem_band --quick-test)
 add_test(NAME SSDSequentialWrite COMMAND test_ssd)

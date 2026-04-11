@@ -21,6 +21,7 @@
 #include "system_info.hpp"
 #include "runtime_detection.hpp"
 #include "json_output.hpp"
+#include "sqlite_output.hpp"
 #include "layout_builder.hpp"
 
 using namespace mem_band;
@@ -58,6 +59,17 @@ struct Options {
     // Output settings
     std::string output_format = "text";  // text | csv | json
     std::string output_file;             // empty = stdout
+    
+    // SQLite settings (only if ENABLE_SQLITE is defined)
+#ifdef ENABLE_SQLITE
+    std::string db_path = "~/.mem_band/benchmarks.db";
+    bool list_benchmarks = false;
+    bool search_benchmarks = false;
+    std::string search_pattern;
+    bool export_db = false;
+    std::string export_format;
+    std::string export_file;
+#endif
 };
 
 // ---------------------------------------------------------------------------
@@ -100,7 +112,15 @@ void print_usage(const char* prog) {
         << "Output options:\n"
         << "  -o, --output-format <fmt>  Output format: text, csv, json (default: text)\n"
         << "  -f, --output-file <path>   Write results to file (default: stdout)\n"
+        
+#ifdef ENABLE_SQLITE
         << "\n"
+        << "Database commands (SQLite):\n"
+        << "  --db-path <path>           Database path (default: ~/.mem_band/benchmarks.db)\n"
+        << "  --list-benchmarks          List all benchmark runs in database\n"
+        << "  --search <pattern>         Search benchmark results by pattern\n"
+        << "  --export-db <fmt> <file>   Export database to CSV/JSON file\n"
+#endif
         << "  -h, --help                 Show this help message\n";
 }
 
@@ -190,6 +210,26 @@ bool parse_args(int argc, char* argv[], Options& opts) {
             if (!require_value(a)) return false;
             opts.output_file = args[++i];
         }
+#ifdef ENABLE_SQLITE
+        // SQLite options
+        else if (a == "--db-path") {
+            if (!require_value(a)) return false;
+            opts.db_path = args[++i];
+        }
+        else if (a == "--list-benchmarks") { opts.list_benchmarks = true; }
+        else if (a == "--search") {
+            if (!require_value(a)) return false;
+            opts.search_benchmarks = true;
+            opts.search_pattern = args[++i];
+        }
+        else if (a == "--export-db") {
+            if (!require_value(a)) return false;
+            opts.export_db = true;
+            opts.export_format = args[++i];
+            if (!require_value(a)) return false;
+            opts.export_file = args[++i];
+        }
+#endif
         else {
             std::cerr << "Unknown option: " << a << "\n";
             return false;
@@ -334,6 +374,37 @@ void run_benchmark(const Options& opts) {
     aligned_free(b);
     aligned_free(c);
 }
+
+#ifdef ENABLE_SQLITE
+// -----------------------------------------------------------------------------
+// SQLite output helpers
+// -----------------------------------------------------------------------------
+void run_sqlite_output(const Options& opts, const std::vector<KernelResult>& results, 
+                       const std::string& system_id) {
+    SQLiteOutput sqlite(opts.db_path);
+    
+    // Convert time_kernel output to get actual bytes_per_iter and bandwidth
+    // Results are already in results vector from run_benchmark
+    for (const auto& r : results) {
+        BenchmarkResult br;
+        br.timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count();
+        br.system_id = system_id;
+        br.kernel = r.name;
+        br.size_mib = opts.size_mib;
+        br.data_type = opts.type;
+        br.iterations = opts.iterations;
+        br.bandwidth_gb_s = r.bandwidth_gbs;
+        br.time_seconds = r.avg_time_s;
+        br.bytes_per_iter = static_cast<unsigned long long>(r.bytes_per_iter);
+        br.cpu_model = "";
+        br.os_name = "";
+        br.os_version = "";
+        
+        sqlite.append(br);
+    }
+}
+#endif
 
 // ---------------------------------------------------------------------------
 // Platform / system info helpers

@@ -273,8 +273,8 @@ CREATE INDEX idx_kernel ON benchmarks(kernel);
 ### Implementation Tasks
 
 #### SQLite Persistence
-- [ ] Create `src/sqlite_output.hpp` with `SQLiteOutput` class
-- [ ] Implement `src/sqlite_output.cpp` with:
+- [x] Create `src/sqlite_output.hpp` with `SQLiteOutput` class
+- [x] Implement `src/sqlite_output.cpp` with:
   - Database initialization and connection management
   - Schema creation (systems + benchmarks tables)
   - Insert benchmark results with system info
@@ -285,12 +285,12 @@ CREATE INDEX idx_kernel ON benchmarks(kernel);
   - Result set parsing into `BenchmarkResult` structs
 
 #### Command-Line Integration
-- [ ] Add database path option to `Options` struct (default: `~/.mem_band/benchmarks.db`)
+- [x] Add database path option to `Options` struct (default: `~/.mem_band/benchmarks.db`)
 - [ ] Implement `--list-benchmarks` / `-L` flag in `main.cpp`
-- [ ] Implement `--search` / `-F` flag with pattern matching
+- [ ] Implement `--search` / `-F` flag with pattern matching  
 - [ ] Implement `--export-db` flag for format conversion
-- [ ] Update `print_usage()` to document new database commands
-- [ ] Handle SQLite compilation with `#ifdef ENABLE_SQLITE`
+- [x] Update `print_usage()` to document new database commands
+- [x] Handle SQLite compilation with `#ifdef ENABLE_SQLITE`
 
 #### Database Browsing CLI Examples
 ```bash
@@ -314,7 +314,7 @@ CREATE INDEX idx_kernel ON benchmarks(kernel);
 ```
 
 #### Tests
-- [ ] Add `tests/test_sqlite_output.cpp` for SQLite persistence tests
+- [x] Add `tests/test_sqlite_output.cpp` for SQLite persistence tests
 - [ ] Add `tests/test_sqlite_input.cpp` for SQLite query tests
 - [ ] Update test suite to include database browsing functionality
 
