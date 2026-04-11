@@ -4,11 +4,30 @@
 #include <chrono>
 #include <iomanip>
 #include <sstream>
+#include <cstdlib>
+#include <cstring>
+
+static std::string expand_path(const std::string& path) {
+    if (path.empty() || path[0] != '~') {
+        return path;
+    }
+    
+    const char* home = std::getenv("HOME");
+    if (!home) {
+        return path;
+    }
+    
+    if (path.size() == 1) {
+        return std::string(home);
+    }
+    
+    return std::string(home) + path.substr(1);
+}
 
 SQLiteOutput::SQLiteOutput(const std::string& db_path)
-    : db_path_(db_path), db_(nullptr) {
+    : db_path_(expand_path(db_path)), db_(nullptr) {
     
-    if (sqlite3_open(db_path.c_str(), &db_) != SQLITE_OK) {
+    if (sqlite3_open(db_path_.c_str(), &db_) != SQLITE_OK) {
         std::cerr << "Failed to open database: " << sqlite3_errmsg(db_) << "\n";
         db_ = nullptr;
         return;

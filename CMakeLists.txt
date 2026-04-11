@@ -95,7 +95,7 @@ target_link_libraries(mem_band PRIVATE platform_detection_lib)
 
 # SQLite output (optional)
 if(SQLITE_AVAILABLE)
-    target_sources(mem_band PRIVATE src/sqlite_output.cpp)
+    target_sources(mem_band PRIVATE src/sqlite_output.cpp src/sqlite_input.cpp)
 endif()
 
 # SIMD support (optional, disabled by default)
@@ -182,6 +182,10 @@ if(BUILD_TESTING)
         add_executable(test_sqlite_output tests/test_sqlite_output.cpp src/sqlite_output.cpp)
         target_include_directories(test_sqlite_output PRIVATE src ${SQLite3_INCLUDE_DIRS})
         target_link_libraries(test_sqlite_output PRIVATE ${SQLite3_LIBRARIES} GTest::gtest_main GTest::gtest)
+        
+        add_executable(test_sqlite_input tests/test_sqlite_input.cpp src/sqlite_output.cpp src/sqlite_input.cpp)
+        target_include_directories(test_sqlite_input PRIVATE src ${SQLite3_INCLUDE_DIRS})
+        target_link_libraries(test_sqlite_input PRIVATE ${SQLite3_LIBRARIES} GTest::gtest_main GTest::gtest)
     endif()
 
     target_include_directories(test_benchmark PRIVATE src)
@@ -248,6 +252,7 @@ if(BUILD_TESTING)
     
     if(SQLITE_AVAILABLE)
         add_test(NAME SQLiteOutputTest COMMAND test_sqlite_output)
+        add_test(NAME SQLiteInputTest COMMAND test_sqlite_input)
     endif()
     
 add_test(NAME MemBandBasicRun COMMAND mem_band --size 8 --iters 1 --type float)

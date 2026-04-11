@@ -22,6 +22,7 @@
 #include "runtime_detection.hpp"
 #include "json_output.hpp"
 #include "sqlite_output.hpp"
+#include "sqlite_input.hpp"
 #include "layout_builder.hpp"
 
 using namespace mem_band;
@@ -71,6 +72,10 @@ struct Options {
     std::string export_file;
 #endif
 };
+
+#ifdef ENABLE_SQLITE
+void run_sqlite_browsing(const Options& opts);
+#endif
 
 // ---------------------------------------------------------------------------
 // Usage
@@ -263,7 +268,7 @@ struct KernelResult {
 };
 
 template <typename T>
-void run_benchmark(const Options& opts) {
+std::vector<KernelResult> run_benchmark(const Options& opts) {
     const std::size_t total_bytes = opts.size_mib * 1024 * 1024;
     const std::size_t n = total_bytes / sizeof(T);
 
@@ -373,6 +378,8 @@ void run_benchmark(const Options& opts) {
     aligned_free(a);
     aligned_free(b);
     aligned_free(c);
+    
+    return results;
 }
 
 #ifdef ENABLE_SQLITE
@@ -632,6 +639,17 @@ int main(int argc, char* argv[]) {
     }
 
     // ------------------------------------------------------------------
+    // Database commands (SQLite only)
+    // ------------------------------------------------------------------
+
+#ifdef ENABLE_SQLITE
+    if (opts.list_benchmarks || opts.search_benchmarks || opts.export_db) {
+        run_sqlite_browsing(opts);
+        return EXIT_SUCCESS;
+    }
+#endif
+
+    // ------------------------------------------------------------------
     // SSD benchmark
     // ------------------------------------------------------------------
 
@@ -649,10 +667,108 @@ int main(int argc, char* argv[]) {
     }
 
     if (opts.type == "float") {
-        run_benchmark<float>(opts);
+        auto results = run_benchmark<float>(opts);
+#ifdef ENABLE_SQLITE
+        auto sys_info = mem_band::SystemInfo::collect();
+        std::string system_id = mem_band::SystemInfo::generate_hash(sys_info);
+        run_sqlite_output(opts, results, system_id);
+#endif
     } else {
-        run_benchmark<double>(opts);
+        auto results = run_benchmark<double>(opts);
+#ifdef ENABLE_SQLITE
+        auto sys_info = mem_band::SystemInfo::collect();
+        std::string system_id = mem_band::SystemInfo::generate_hash(sys_info);
+        run_sqlite_output(opts, results, system_id);
+#endif
     }
 
     return EXIT_SUCCESS;
 }
+
+#ifdef ENABLE_SQLITE
+// -----------------------------------------------------------------------------
+// SQLite database browsing
+// -----------------------------------------------------------------------------
+
+void run_sqlite_browsing(const Options& opts) {
+    SQLiteInput input(opts.db_path);
+    std::cout << "# Database: " << opts.db_path << "\n";
+    
+    if (opts.list_benchmarks) {
+        std::cout << "# Listing benchmarks\n";
+        std::cout << std::left << std::setw(6) << "ID"
+                  << std::setw(20) << "Timestamp"
+                  << std::setw(14) << "System ID"
+                  << std::setw(12) << "Kernel"
+                  << std::setw(10) << "Size(MiB)"
+                  << std::setw(8) << "Type"
+                  << std::setw(16) << "Bandwidth(GB/s)" << "\n";
+        std::cout << std::string(88, '-') << "\n";
+        
+        auto results = input.query_all();
+        if (results.empty()) {
+            std::cout << "No benchmarks found in database.\n";
+        } else {
+            for (size_t i = 0; i < results.size(); ++i) {
+                const auto& r = results[i];
+                std::cout << std::left << std::setw(6) << (i + 1)
+                          << std::setw(20) << r.timestamp
+                          << std::setw(14) << r.system_id.substr(0, 12)
+                          << std::setw(12) << r.kernel
+                          << std::setw(10) << r.size_mib
+                          << std::setw(8) << r.data_type
+                          << std::setw(16) << std::fixed << std::setprecision(2) << r.bandwidth_gb_s << "\n";
+            }
+        }
+    }
+    
+    if (opts.search_benchmarks) {
+        std::cout << "# Searching: " << opts.search_pattern << "\n";
+        std::cout << std::left << std::setw(6) << "ID"
+                  << std::setw(20) << "Timestamp"
+                  << std::setw(14) << "System ID"
+                  << std::setw(12) << "Kernel"
+                  << std::setw(10) << "Size(MiB)"
+                  << std::setw(8) << "Type"
+                  << std::setw(16) << "Bandwidth(GB/s)" << "\n";
+        std::cout << std::string(88, '-') << "\n";
+        
+        auto results = input.search(opts.search_pattern);
+        if (results.empty()) {
+            std::cout << "No matching benchmarks found.\n";
+        } else {
+            for (size_t i = 0; i < results.size(); ++i) {
+                const auto& r = results[i];
+                std::cout << std::left << std::setw(6) << (i + 1)
+                          << std::setw(20) << r.timestamp
+                          << std::setw(14) << r.system_id.substr(0, 12)
+                          << std::setw(12) << r.kernel
+                          << std::setw(10) << r.size_mib
+                          << std::setw(8) << r.data_type
+                          << std::setw(16) << std::fixed << std::setprecision(2) << r.bandwidth_gb_s << "\n";
+            }
+        }
+    }
+    
+    if (opts.export_db) {
+        std::cout << "# Exporting to " << opts.export_format << ": " << opts.export_file << "\n";
+        
+        bool success = false;
+        if (opts.export_format == "csv") {
+            success = input.export_csv(opts.export_file);
+        } else if (opts.export_format == "json") {
+            success = input.export_json(opts.export_file);
+        } else {
+            std::cerr << "Invalid export format: " << opts.export_format
+                      << " (must be csv or json)\n";
+            return;
+        }
+        
+        if (success) {
+            std::cout << "Export successful.\n";
+        } else {
+            std::cerr << "Export failed.\n";
+        }
+    }
+}
+#endif
