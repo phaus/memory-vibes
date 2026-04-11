@@ -326,15 +326,15 @@ CREATE INDEX idx_kernel ON benchmarks(kernel);
 
 ### Priority Order
 
-1. **High Priority:**
-   - SQLite output class implementation
-   - Database schema design
-   - Basic `--list-benchmarks` command
+1. **High Priority (PARTIAL - IMPLEMENTED):**
+   - SQLite output class implementation ✅
+   - Database schema design ✅
+   - Basic `--list-benchmarks` command ⏳ (CLI integration complete, implementation pending)
 
-2. **Medium Priority:**
-   - `--search` command with pattern matching
-   - Export functionality
-   - Unit tests for database operations
+2. **Medium Priority (PARTIAL - CLI INTEGRATION COMPLETE):**
+   - `--search` command with pattern matching ⏳ (CLI options added, implementation pending)
+   - Export functionality ⏳ (CLI options added, implementation pending)
+   - Unit tests for database operations ✅
 
 3. **Low Priority:**
    - Advanced filtering/sorting
