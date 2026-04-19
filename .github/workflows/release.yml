@@ -1,0 +1,204 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  schedule:
+    # Nightly at 02:00 UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # ── Linux native ──────────────────────────────────────
+          - os: ubuntu-latest
+            name: linux-x86_64
+            cmake_extra: ""
+            artifact: mem_band
+            cross: false
+          - os: ubuntu-latest
+            name: linux-x86_64-simd
+            cmake_extra: "-DENABLE_SIMD=ON"
+            artifact: mem_band
+            cross: false
+          # Linux i386 (32-bit x86)
+          - os: ubuntu-latest
+            name: linux-i386
+            cmake_extra: "-DCMAKE_TOOLCHAIN_FILE=toolchain-i386.cmake"
+            artifact: mem_band
+            cross: true
+            cross_packages: "gcc-multilib g++-multilib"
+            smoke: false
+          # Linux ARM32 (armhf)
+          - os: ubuntu-latest
+            name: linux-arm32
+            cmake_extra: "-DCMAKE_C_COMPILER=arm-linux-gnueabihf-gcc -DCMAKE_CXX_COMPILER=arm-linux-gnueabihf-g++"
+            artifact: mem_band
+            cross: true
+            cross_packages: "gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf"
+            smoke: false
+          # Linux ARM64 (aarch64)
+          - os: ubuntu-latest
+            name: linux-arm64
+            cmake_extra: "-DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++"
+            artifact: mem_band
+            cross: true
+            cross_packages: "gcc-aarch64-linux-gnu g++-aarch64-linux-gnu"
+            smoke: false
+
+          # ── macOS ─────────────────────────────────────────────
+          - os: macos-latest
+            name: macos-arm64
+            cmake_extra: "-DCMAKE_OSX_ARCHITECTURES=arm64"
+            artifact: mem_band
+            cross: false
+          - os: macos-latest
+            name: macos-arm64-simd
+            cmake_extra: "-DCMAKE_OSX_ARCHITECTURES=arm64 -DENABLE_SIMD=ON"
+            artifact: mem_band
+            cross: false
+          - os: macos-latest
+            name: macos-x86_64
+            cmake_extra: "-DCMAKE_OSX_ARCHITECTURES=x86_64"
+            artifact: mem_band
+            cross: true
+            smoke: false
+
+          # ── Windows ───────────────────────────────────────────
+          - os: windows-latest
+            name: windows-x64
+            cmake_extra: "-A x64"
+            artifact: mem_band.exe
+            cross: false
+          - os: windows-latest
+            name: windows-x64-simd
+            cmake_extra: "-A x64 -DENABLE_SIMD=ON"
+            artifact: mem_band.exe
+            cross: false
+          - os: windows-latest
+            name: windows-x86
+            cmake_extra: "-A Win32"
+            artifact: mem_band.exe
+            cross: false
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up CMake
+        uses: jwlawson/actions-setup-cmake@v1
+        with:
+          cmake-version: '3.22.0'
+
+      - name: Install cross-compilation toolchain
+        if: matrix.cross_packages != ''
+        run: |
+          sudo dpkg --add-architecture i386 2>/dev/null || true
+          sudo apt-get update
+          sudo apt-get install -y ${{ matrix.cross_packages }}
+        shell: bash
+
+      - name: Configure
+        run: >
+          cmake -S . -B build
+          -DCMAKE_BUILD_TYPE=Release
+          -DBUILD_TESTING=OFF
+          ${{ matrix.cmake_extra }}
+        shell: bash
+
+      - name: Build
+        run: cmake --build build --config Release
+        shell: bash
+
+      - name: Run smoke test
+        if: matrix.smoke != false && matrix.cross != true
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            ./build/Release/${{ matrix.artifact }} memory --quick-test
+          else
+            ./build/${{ matrix.artifact }} memory --quick-test
+          fi
+        shell: bash
+
+      - name: Package artifact
+        run: |
+          mkdir -p dist
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            cp build/Release/${{ matrix.artifact }} dist/
+          else
+            cp build/${{ matrix.artifact }} dist/
+          fi
+          cp README.md LICENSE dist/ 2>/dev/null || true
+          cd dist
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            7z a ../mem_band-${{ matrix.name }}.zip .
+          else
+            tar czf ../mem_band-${{ matrix.name }}.tar.gz .
+          fi
+        shell: bash
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mem_band-${{ matrix.name }}
+          path: mem_band-${{ matrix.name }}.*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: List artifacts
+        run: find artifacts -type f || ls -R artifacts
+
+      - name: Determine release tag
+        id: tag
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+            echo "name=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          else
+            TAG="nightly-$(date -u +%Y%m%d)"
+            echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+            echo "name=Nightly ${TAG}" >> "$GITHUB_OUTPUT"
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          fi
+        shell: bash
+
+      - name: Delete existing nightly tag (if nightly)
+        if: steps.tag.outputs.prerelease == 'true'
+        run: |
+          gh release delete "${{ steps.tag.outputs.tag }}" --yes --cleanup-tag 2>/dev/null || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+
+      - name: Create GitHub Release
+        run: |
+          gh release create "${{ steps.tag.outputs.tag }}" \
+            --repo "${{ github.repository }}" \
+            --title "${{ steps.tag.outputs.name }}" \
+            --generate-notes \
+            ${{ steps.tag.outputs.prerelease == 'true' && '--prerelease' || '' }} \
+            artifacts/*
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
