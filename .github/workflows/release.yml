@@ -32,10 +32,10 @@ jobs:
             cmake_extra: "-DENABLE_SIMD=ON"
             artifact: mem_band
             cross: false
-          # Linux i386 (32-bit x86)
+          # Linux i386 (32-bit x86) -- use native gcc with -m32
           - os: ubuntu-latest
             name: linux-i386
-            cmake_extra: "-DCMAKE_TOOLCHAIN_FILE=toolchain-i386.cmake"
+            cmake_extra: '-DCMAKE_C_FLAGS=-m32 -DCMAKE_CXX_FLAGS=-m32'
             artifact: mem_band
             cross: true
             cross_packages: "gcc-multilib g++-multilib"
@@ -63,11 +63,8 @@ jobs:
             cmake_extra: "-DCMAKE_OSX_ARCHITECTURES=arm64"
             artifact: mem_band
             cross: false
-          - os: macos-latest
-            name: macos-arm64-simd
-            cmake_extra: "-DCMAKE_OSX_ARCHITECTURES=arm64 -DENABLE_SIMD=ON"
-            artifact: mem_band
-            cross: false
+          # Note: macOS arm64 SIMD is omitted because ENABLE_SIMD adds -mavx2
+          # which is x86-only and incompatible with ARM targets.
           - os: macos-latest
             name: macos-x86_64
             cmake_extra: "-DCMAKE_OSX_ARCHITECTURES=x86_64"
@@ -158,6 +155,7 @@ jobs:
 
   release:
     needs: build
+    if: always() && !cancelled()
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
