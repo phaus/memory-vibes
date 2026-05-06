@@ -21,6 +21,7 @@
 #ifdef __APPLE__
 #include <sys/sysctl.h>
 #include <CoreFoundation/CoreFoundation.h>
+#include <IOKit/IOKitLib.h>
 #endif
 
 namespace mem_band {
@@ -535,18 +536,13 @@ std::string PlatformDetection::detect_cpu_vendor_macos() {
 std::vector<HardwareDeviceInfo> PlatformDetection::scan_pci_macos() {
     std::vector<HardwareDeviceInfo> devices;
 
-    mach_port_t mach_port = MACH_PORT_NULL;
-    if (mach_port_make_name(mig_get_master_port(), &mach_port) != KERN_SUCCESS) {
-        return devices;
-    }
-
     CFMutableDictionaryRef matching_dict = IOServiceMatching("IOPCIDevice");
     if (!matching_dict) {
         return devices;
     }
 
     io_iterator_t iter = MACH_PORT_NULL;
-    kern_return_t kr = IOServiceGetMatchingServices(mach_port, matching_dict, &iter);
+    kern_return_t kr = IOServiceGetMatchingServices(MACH_PORT_NULL, matching_dict, &iter);
     if (kr != KERN_SUCCESS || iter == MACH_PORT_NULL) {
         return devices;
     }
