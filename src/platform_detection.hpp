@@ -51,7 +51,10 @@ private:
     static std::vector<HardwareDeviceInfo> scan_pci_macos();
 #endif
 
-    static HardwareDeviceInfo parse_device_info(const std::string& line);
+#if defined(_WIN32)
+    static std::vector<HardwareDeviceInfo> ScanPciDevicesWmi();
+    static std::vector<HardwareDeviceInfo> ScanPciDevicesSetupApi();
+#endif
 };
 
 } // namespace mem_band

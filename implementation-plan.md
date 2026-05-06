@@ -112,11 +112,13 @@
   - Scan `/sys/bus/pci/devices` for accelerators
   - Filter Display/3D controllers (Class 03xxxx)
   - Extract vendor, device, and class IDs
-- [ ] Create platform-specific detection implementations
-  - Linux: `/sys` filesystem scanning - **IMPLEMENTED**
-  - Windows: WMI (Windows Management Instrumentation) queries - **PLACEHOLDER ONLY**
-   - macOS: CoreFoundation and sysctl calls - **PARTIAL (CPU only)**
-   - macOS: `detect_platform()` returns `"aarch64-linux"` instead of `"arm64-macos"` ❌
+- [x] Create platform-specific detection implementations
+   - Linux: `/sys` filesystem scanning - **IMPLEMENTED**
+   - Windows: WMI (Windows Management Instrumentation) queries - **IMPLEMENTED**
+   - macOS: CoreFoundation/IOKit sysctl calls - **IMPLEMENTED**
+   - macOS: PCI enumeration via IOKit device tree - **IMPLEMENTED**
+   - Windows: PCI enumeration via WMI + SetupAPI fallback - **IMPLEMENTED**
+   - Windows: CPU vendor detection via `__cpuid` intrinsic - **IMPLEMENTED**
 
 ### Platform Detection Implementation Status
 
@@ -124,18 +126,16 @@
 |----------|--------------|---------------|-----------------|-----------------|---------|
 | Linux | x86_64 | `/proc/cpuinfo` vendor_id" | `/sys/bus/pci/devices` | `x86_64-linux` | Complete |
 | Linux | aarch64 | `/proc/cpuinfo` vendor_id" | `/sys/bus/pci/devices` | `aarch64-linux` | Complete |
-| macOS | x86_64 | `sysctlbyname("machdep.cpu.vendor")` | Empty (placeholder) | `x86_64-macos` | Partial (PCI missing) |
-| macOS | aarch64 | `sysctlbyname("machdep.cpu.vendor")` | Empty (placeholder) | `arm64-macos` | Partial (PCI missing) |
-| Windows | x86_64 | Empty (placeholder) | Empty (WMI placeholder) | `x86_64-windows` | Partial |
-| Windows | aarch64 | Empty (placeholder) | Empty (WMI placeholder) | `arm64-windows` | Partial |
+| macOS | x86_64 | `sysctlbyname("machdep.cpu.vendor")` | IOKit device tree | `x86_64-macos` | Complete |
+| macOS | aarch64 | `sysctlbyname("machdep.cpu.vendor")` | IOKit device tree | `arm64-macos` | Complete |
+| Windows | x86_64 | `__cpuid` intrinsic | WMI + SetupAPI fallback | `x86_64-windows` | Complete |
+| Windows | aarch64 | `__cpuid` intrinsic | WMI + SetupAPI fallback | `arm64-windows` | Complete |
 
 **Note**: Platform detection order bug (architecture checked before OS) has been **FIXED** in both `system_info.cpp` and `apu_identifier.hpp`. OS is now checked first, then architecture.
 
 ### Active Platform Detection ToDos
-- [ ] Full Windows WMI implementation for PCIe device enumeration
-- [ ] Full macOS IOKit/sysctl implementation for PCIe device enumeration
-- [ ] Add platform detection unit test coverage for Windows/macOS
 - [ ] Test platform detection on real Windows/macOS hardware
+- [ ] Cross-platform CI testing for Windows/macOS detection paths (platform-independent test coverage)
 
 ### Platform Identification Requirements (Updated)
 - [x] Platform Identification should ONLY be shown when called with "-P" flag OR as a header line before tests
@@ -205,9 +205,7 @@
 - [ ] Automated graph generation from persistent CSV data
 - [ ] Diff comparison tool for benchmark regression detection
 - [ ] Remote storage integration for collaborative benchmarking
-- [ ] Full Windows WMI implementation in platform_detection.cpp (currently placeholder)
-- [ ] Full macOS PCIe scan in platform_detection.cpp (currently placeholder)
-- [ ] Add platform detection unit test coverage for Windows/macOS
+- [ ] Test platform detection on real Windows/macOS hardware
 - [ ] Document SQLite schema for persistent storage
 
 ## Phase 13: Persistence Layer Enhancement

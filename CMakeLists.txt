@@ -90,6 +90,11 @@ endif()
 add_library(platform_detection_lib STATIC src/platform_detection.cpp src/runtime_detection.cpp src/platform_dynamic_lib.cpp)
 target_include_directories(platform_detection_lib PRIVATE src)
 
+target_link_libraries(platform_detection_lib PRIVATE $<$<PLATFORM_ID:Darwin>:CoreFoundation>)
+if(WIN32)
+    target_link_libraries(platform_detection_lib PRIVATE wbemuuid.lib ole32.lib oleaut32.lib)
+endif()
+
 add_executable(mem_band src/main.cpp src/system_info.cpp src/csv_output.cpp src/json_output.cpp src/layout_builder.cpp)
 target_link_libraries(mem_band PRIVATE platform_detection_lib)
 
