@@ -9,10 +9,14 @@
 #include <windows.h>
 #include <devguid.h>
 #include <wbemidl.h>
+#include <comdef.h>
+#include <setupapi.h>
+#include <winnls.h>
 #include <intrin.h>
 #pragma comment(lib, "wbemuuid.lib")
 #pragma comment(lib, "ole32.lib")
 #pragma comment(lib, "oleaut32.lib")
+#pragma comment(lib, "setupapi.lib")
 #else
 #include <dirent.h>
 #include <cstring>
@@ -414,8 +418,8 @@ std::vector<HardwareDeviceInfo> ScanPciDevicesSetupApi() {
     for (DWORD i = 0; SetupDiEnumDeviceInfo(dev_info, i, &dev_data); i++) {
         HardwareDeviceInfo device;
 
-        TCHAR buffer[MAX_PATH] = {0};
-        if (SetupDiGetDeviceRegistryProperty(
+        WCHAR buffer[MAX_PATH] = {0};
+        if (SetupDiGetDeviceRegistryPropertyW(
                 dev_info, &dev_data, SPDRP_HARDWAREID,
                 NULL, (PBYTE)buffer, sizeof(buffer), NULL)) {
             std::string hw_id = WideToUtf8(buffer);
@@ -441,13 +445,13 @@ std::vector<HardwareDeviceInfo> ScanPciDevicesSetupApi() {
             }
         }
 
-        if (SetupDiGetDeviceRegistryProperty(
+        if (SetupDiGetDeviceRegistryPropertyW(
                 dev_info, &dev_data, SPDRP_DEVICEDESC,
                 NULL, (PBYTE)buffer, sizeof(buffer), NULL)) {
             device.device = Trim(WideToUtf8(buffer));
         }
 
-        if (SetupDiGetDeviceRegistryProperty(
+        if (SetupDiGetDeviceRegistryPropertyW(
                 dev_info, &dev_data, SPDRP_MFG,
                 NULL, (PBYTE)buffer, sizeof(buffer), NULL)) {
             device.vendor = Trim(WideToUtf8(buffer));
@@ -455,11 +459,11 @@ std::vector<HardwareDeviceInfo> ScanPciDevicesSetupApi() {
 
         const ULONG class_codes[] = {0x030000, 0x038000, 0x030100, 0x030200};
         for (ULONG cc : class_codes) {
-            TCHAR class_buf[MAX_PATH] = {0};
-            if (SetupDiGetDeviceRegistryProperty(
+            WCHAR class_buf[MAX_PATH] = {0};
+            if (SetupDiGetDeviceRegistryPropertyW(
                     dev_info, &dev_data, SPDRP_CLASS,
                     NULL, (PBYTE)class_buf, sizeof(class_buf), NULL) &&
-                SetupDiGetDeviceRegistryProperty(
+                SetupDiGetDeviceRegistryPropertyW(
                     dev_info, &dev_data, SPDRP_CLASSCODE,
                     NULL, (PBYTE)class_buf, sizeof(class_buf), NULL)) {
                 break;
