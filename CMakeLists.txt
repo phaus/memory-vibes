@@ -91,7 +91,9 @@ add_library(platform_detection_lib STATIC src/platform_detection.cpp src/runtime
 target_include_directories(platform_detection_lib PRIVATE src)
 
 if(APPLE)
-    target_link_libraries(platform_detection_lib PRIVATE CoreFoundation IOKit)
+    find_library(COREFOUNDATION_FRAMEWORK CoreFoundation)
+    find_library(IOKIT_FRAMEWORK IOKit)
+    target_link_libraries(platform_detection_lib PRIVATE ${COREFOUNDATION_FRAMEWORK} ${IOKIT_FRAMEWORK})
 endif()
 if(WIN32)
     target_link_libraries(platform_detection_lib PRIVATE wbemuuid.lib ole32.lib oleaut32.lib)
