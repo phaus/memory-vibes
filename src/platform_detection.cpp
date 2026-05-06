@@ -623,8 +623,9 @@ std::vector<HardwareDeviceInfo> PlatformDetection::scan_pci_macos() {
         }
 
         if (info.device.empty() && info.vendor.empty()) {
-            io_object_t parent = IORegistryEntryGetParentEntry(device_object, kIOServicePlane);
-            if (parent) {
+            io_registry_entry_t parent = MACH_PORT_NULL;
+            kern_return_t kr = IORegistryEntryGetParentEntry(device_object, kIOServicePlane, &parent);
+            if (kr == KERN_SUCCESS && parent != MACH_PORT_NULL) {
                 CFTypeRef parent_model = IORegistryEntryCreateCFProperty(parent, CFSTR("model"), kCFAllocatorDefault, 0);
                 if (parent_model && CFGetTypeID(parent_model) == CFStringGetTypeID()) {
                     char buf[1024] = {0};
@@ -632,6 +633,7 @@ std::vector<HardwareDeviceInfo> PlatformDetection::scan_pci_macos() {
                     info.device = std::string(buf);
                 }
                 if (parent_model) CFRelease(parent_model);
+                IOObjectRelease(parent);
             }
         }
 
