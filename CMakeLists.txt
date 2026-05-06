@@ -95,9 +95,7 @@ if(APPLE)
     find_library(IOKIT_FRAMEWORK IOKit)
     target_link_libraries(platform_detection_lib PRIVATE ${COREFOUNDATION_FRAMEWORK} ${IOKIT_FRAMEWORK})
 endif()
-if(WIN32)
-    target_link_libraries(platform_detection_lib PRIVATE wbemuuid.lib ole32.lib oleaut32.lib setupapi.lib)
-endif()
+
 
 add_executable(mem_band src/main.cpp src/system_info.cpp src/csv_output.cpp src/json_output.cpp src/layout_builder.cpp)
 target_link_libraries(mem_band PRIVATE platform_detection_lib)

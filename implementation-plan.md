@@ -114,11 +114,10 @@
   - Extract vendor, device, and class IDs
 - [x] Create platform-specific detection implementations
    - Linux: `/sys` filesystem scanning - **IMPLEMENTED**
-   - Windows: WMI (Windows Management Instrumentation) queries - **IMPLEMENTED**
    - macOS: CoreFoundation/IOKit sysctl calls - **IMPLEMENTED**
    - macOS: PCI enumeration via IOKit device tree - **IMPLEMENTED**
-   - Windows: PCI enumeration via WMI + SetupAPI fallback - **IMPLEMENTED**
    - Windows: CPU vendor detection via `__cpuid` intrinsic - **IMPLEMENTED**
+   - Windows: PCI scanning - returns empty (future: WMI/SetupAPI)
 
 ### Platform Detection Implementation Status
 
