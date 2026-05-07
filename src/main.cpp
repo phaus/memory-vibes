@@ -40,6 +40,7 @@ struct Options {
     std::string type = "float";
     bool simd = false;
     bool alu = false;
+    bool nt = false;
 
     std::string ssd_path = "/tmp";
     std::size_t ssd_block_size = 4096;
@@ -101,6 +102,7 @@ void print_usage(const char* prog) {
         << "  -t, --type <float|double>  Data type (default: float)\n"
         << "  -S, --simd                 Enable SIMD kernels (requires build flag)\n"
         << "  -A, --alu                  Include ALU-intensive kernel\n"
+        << "  -N, --non-temporal         Use non-temporal (streaming) stores\n"
         << "  -M, --run-medium-test      Medium test (256 MiB, standard iterations)\n"
         << "  -Q, --quick-test           Quick test (64 MiB, 5 iterations)\n"
         << "\n"
@@ -228,6 +230,7 @@ bool parse_args(int argc, char* argv[], Options& opts) {
         }
         else if (a == "-S" || a == "--simd") { opts.simd = true; }
         else if (a == "-A" || a == "--alu")  { opts.alu = true; }
+        else if (a == "-N" || a == "--non-temporal") { opts.nt = true; }
         else if (a == "--ssd-path") {
             std::string val = advance();
             if (val.empty()) {
@@ -371,13 +374,19 @@ std::vector<KernelResult> run_benchmark(const Options& opts) {
     {
         auto avg = time_kernel([&]() {
         #ifdef SIMD_ENABLED
-            if (opts.simd) {
+            if (opts.nt) {
+                copy_kernel_nt_simd(a, c, n);
+            } else if (opts.simd) {
                 copy_kernel_simd(a, c, n);
             } else {
                 copy_kernel<T>(a, c, n);
             }
         #else
-            copy_kernel<T>(a, c, n);
+            if (opts.nt) {
+                copy_kernel_nt<T>(a, c, n);
+            } else {
+                copy_kernel<T>(a, c, n);
+            }
         #endif
         }, opts.iterations);
 
@@ -389,7 +398,9 @@ std::vector<KernelResult> run_benchmark(const Options& opts) {
     {
         T scalar = static_cast<T>(3);
         auto avg = time_kernel([&]() {
-            if (opts.simd) {
+            if (opts.nt) {
+                triad_kernel_nt_simd(a, b, c, scalar, n);
+            } else if (opts.simd) {
                 triad_kernel_simd(a, b, c, scalar, n);
             } else {
                 triad_kernel<T>(a, b, c, scalar, n);
@@ -425,7 +436,13 @@ std::vector<KernelResult> run_benchmark(const Options& opts) {
 
     // ---- Print results ----
     std::cout << "# Size: " << opts.size_mib << " MiB, Type: " << opts.type
-              << ", Iterations: " << opts.iterations << "\n";
+              << ", Iterations: " << opts.iterations;
+    if (opts.nt) {
+        std::cout << ", Non-temporal: yes";
+    }
+    if (opts.simd) {
+        std::cout << ", SIMD: yes";
+    }
     std::cout << std::left << std::setw(10) << "Kernel"
               << std::right << std::setw(14) << "Data/Iter"
               << std::setw(14) << "Time(ms)"

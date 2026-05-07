@@ -191,15 +191,15 @@
 ### Complete Features
 - [x] Multi-threaded kernel implementations (OpenMP / std::thread) - IMPLEMENTED (std::thread + std::async)
 - [x] Additional STREAM kernels (Scale, Add) with vectorization - ALREADY IN benchmark.hpp
-- [ ] Non-temporal (streaming) store implementations - NOT YET IMPLEMENTED
+ - [x] Non-temporal (streaming) store implementations - IMPLEMENTED in benchmark.hpp
 - [x] JSON output format (additional to CSV and text) - IMPLEMENTED in json_output.hpp/cpp
 - [ ] SQLite backend for structured benchmark queries and indexing - NOT YET IMPLEMENTED
 - [ ] Automated graph generation from persistent CSV data - NOT YET IMPLEMENTED
 - [ ] Diff comparison tool for benchmark regression detection - NOT YET IMPLEMENTED
 - [ ] Remote storage integration for collaborative benchmarking - NOT YET IMPLEMENTED
 
-### Active ToDos
-- [ ] Non-temporal (streaming) store implementations for systems that support them
+ ### Active ToDos
+ - [x] Non-temporal (streaming) store implementations for systems that support them
 - [ ] SQLite backend for structured benchmark queries and indexing
 - [ ] Automated graph generation from persistent CSV data
 - [ ] Diff comparison tool for benchmark regression detection
