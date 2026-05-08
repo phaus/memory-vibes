@@ -489,8 +489,6 @@ void run_sqlite_output(const Options& opts, const std::vector<KernelResult>& res
     // Results are already in results vector from run_benchmark
     for (const auto& r : results) {
         BenchmarkResult br;
-        br.timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::system_clock::now().time_since_epoch()).count();
         br.system_id = system_id;
         br.kernel = r.name;
         br.size_mib = opts.size_mib;

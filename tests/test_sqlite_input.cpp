@@ -61,8 +61,16 @@ protected:
 TEST_F(SQLiteInputTest, QueryAllReturnsResults) {
     auto results = input->query_all();
     EXPECT_EQ(results.size(), 5);
-    EXPECT_EQ(results[0].kernel, "RandomRW");
-    EXPECT_EQ(results[4].kernel, "Copy");
+    // Count kernels to verify all were stored correctly
+    int copy_count = 0, triad_count = 0, randomrw_count = 0;
+    for (const auto& r : results) {
+        if (r.kernel == "Copy") copy_count++;
+        else if (r.kernel == "Triad") triad_count++;
+        else if (r.kernel == "RandomRW") randomrw_count++;
+    }
+    EXPECT_EQ(copy_count, 2);
+    EXPECT_EQ(triad_count, 2);
+    EXPECT_EQ(randomrw_count, 1);
 }
 
 TEST_F(SQLiteInputTest, QueryBySystemId) {

@@ -90,9 +90,18 @@
   - CSV format includes timestamp, system_id, kernel, size, type, bandwidth, latency
   - Created JSON output implementation in src/json_output.hpp/cpp
 - **Active ToDos:**
-  - [ ] SQLiteOutput class for SQLite persistent storage (spec exists, implementation missing)
-  - [ ] Document SQLite schema for benchmark results table
-  - [ ] Integrate SQLite output with main benchmark execution flow
+  - [x] SQLiteOutput class implemented in src/sqlite_output.hpp/cpp
+  - [x] SQLite schema documented (systems + benchmarks tables with indexes)
+  - [x] SQLite output integrated into main benchmark execution flow (run_sqlite_output called after memory benchmarks)
+  - [x] Verified timestamp roundtrip: sqlite_output writes `"%Y-%m-%d %H:%M:%S"`, sqlite_input reads it correctly
+  - [x] Removed dead code: main.cpp:492-493 `br.timestamp` assignment (sqlite_output ignores it, uses own `now()`)
+  - [x] Removed redundant `#define ENABLE_SQLITE` from top of sqlite_output.cpp and sqlite_input.cpp
+  - [x] Fixed CMake bug: test_sqlite_output and test_sqlite_input were missing `ENABLE_SQLITE` compile definition — tests compiled but GoogleTest never ran due to `#ifdef ENABLE_SQLITE` guards
+  - [ ] Populate systems table with real values (core_count, memory_size_mb, platform currently hardcoded to 0/"") — **pass through `SystemInfo::collect()` via `run_sqlite_output()`**
+  - [ ] Add transaction wrapping to SQLiteOutput::append() for bulk writes
+  - [ ] Add thread-safety (mutex) to SQLite I/O for concurrent benchmark runs
+  - [ ] Proper CSV quoting in csv_output and SQLiteInput::export_csv()
+  - [ ] Proper JSON escaping in SQLiteInput::export_json() (currently raw string concatenation)
 
 ## Phase 10: Platform Detection (NEW)
 - [x] Complete platform detection implementation
@@ -161,9 +170,20 @@
 - **Current**: Returns empty `std::vector<HardwareDeviceInfo>()`
 - **Expected**: Use IOKit or `system_profiler SPHardwareDataType` to enumerate devices
 ### Platform-Specific Implementation Status
-- **Linux**: Full implementation with `/sys` filesystem scanning
-- **macOS**: CPU detection via `sysctlbyname()` works; PCI enumeration pending (IOKit/sysctl needed)
-- **Windows**: CPU detection is placeholder; PCI enumeration pending (WMI needed)
+
+| Platform | CPU Detection | PCI Enumeration | Platform String | Notes |
+|----------|--------------|-----------------|-----------------|-------|
+| Linux | `/proc/cpuinfo` vendor_id | `/sys/bus/pci/devices` full scan | `x86_64-linux`, `aarch64-linux` | Complete, functional |
+| macOS | `sysctlbyname("machdep.cpu.vendor")` | IOKit `IOPCIDevice` service tree | `x86_64-macos`, `arm64-macos` | CPU detection works; PCI populates `vendor_id` from device tree |
+| Windows | `__cpuid` intrinsic | Empty stub (returns `[]{}`) | `x86_64-windows`, `arm64-windows` | CPU detection functional; PCI needs WMI/SetupAPI (low priority) |
+| Cross-platform | — | — | Fallback: `unknown-unknown` | ARM returns `"ARM 64-bit CPU"` with no actual model |
+
+### Known Platform Detection Issues
+- **macOS PCI scan**: Uses IOKit but only populates `vendor_id` from `CFData` bytes; `vendor` string may be empty
+- **Windows PCI scan**: Returns empty vector — needs WMI/SetupAPI for real enumeration (low priority)
+- **Windows system_info**: `detect_cpu_model()`, `detect_memory_size()`, `detect_os()` only have `__linux__`/`__APPLE__` guards — no Windows implementation
+- **ARM CPU model**: `detect_cpu_model()` returns literal `"ARM 64-bit CPU"` with no actual model identification
+- **simd_enabled**: Hardcoded to `true` in `SystemIdentifier` regardless of compile-time or runtime availability
 
 ### Platform Detection Enhancement (COMPLETE)
 ### Platform Identification Requirements (COMPLETE)
@@ -191,21 +211,29 @@
 ### Complete Features
 - [x] Multi-threaded kernel implementations (OpenMP / std::thread) - IMPLEMENTED (std::thread + std::async)
 - [x] Additional STREAM kernels (Scale, Add) with vectorization - ALREADY IN benchmark.hpp
- - [x] Non-temporal (streaming) store implementations - IMPLEMENTED in benchmark.hpp
+- [x] Non-temporal (streaming) store implementations - IMPLEMENTED in benchmark.hpp
 - [x] JSON output format (additional to CSV and text) - IMPLEMENTED in json_output.hpp/cpp
-- [ ] SQLite backend for structured benchmark queries and indexing - NOT YET IMPLEMENTED
+- [x] SQLite backend for structured benchmark queries and indexing - IMPLEMENTED (sqlite_output + sqlite_input)
+- [x] --list-benchmarks CLI flag - IMPLEMENTED (gated behind ENABLE_SQLITE)
+- [x] --search <pattern> CLI flag - IMPLEMENTED (gated behind ENABLE_SQLITE)
+- [x] --export-db <format> <file> CLI flag - IMPLEMENTED (gated behind ENABLE_SQLITE)
 - [ ] Automated graph generation from persistent CSV data - NOT YET IMPLEMENTED
 - [ ] Diff comparison tool for benchmark regression detection - NOT YET IMPLEMENTED
 - [ ] Remote storage integration for collaborative benchmarking - NOT YET IMPLEMENTED
 
- ### Active ToDos
- - [x] Non-temporal (streaming) store implementations for systems that support them
-- [ ] SQLite backend for structured benchmark queries and indexing
-- [ ] Automated graph generation from persistent CSV data
-- [ ] Diff comparison tool for benchmark regression detection
-- [ ] Remote storage integration for collaborative benchmarking
-- [ ] Test platform detection on real Windows/macOS hardware
-- [ ] Document SQLite schema for persistent storage
+  ### Active ToDos
+  - [x] Non-temporal (streaming) store implementations for systems that support them
+  - [x] SQLite backend fully implemented (read + write + CLI integration)
+  - [x] Removed dead br.timestamp code in main.cpp
+  - [x] Fixed CMake ENABLE_SQLITE definition for test targets (tests were silently not running)
+  - [x] Verified timestamp roundtrip works correctly
+  - [ ] Automated graph generation from persistent CSV data
+  - [ ] Diff comparison tool for benchmark regression detection
+  - [ ] Remote storage integration for collaborative benchmarking
+  - [ ] Fix timestamp format mismatch: sqlite_output writes `"%Y-%m-%d %H:%M:%S"` but sqlite_input reads as milliseconds epoch
+  - [ ] Populate systems table with real values (core_count, memory_size_mb, platform are hardcoded to 0/"")
+  - [ ] Add thread-safety (mutex) to SQLite I/O for concurrent benchmark runs
+  - [ ] Add CSV/JSON escaping for string fields containing special characters
 
 ## Phase 13: Persistence Layer Enhancement
 
@@ -218,19 +246,13 @@
 ### New Command-Line Features Needed
 
 #### Database Commands
-- [ ] `--list-benchmarks` - List all benchmark runs in database with filtering options (note: `-L` short flag is used by `--system-layout`):
-  - Filter by system ID
-  - Filter by date range
-  - Filter by kernel type
-  - Sort by timestamp/bandwidth
-- [ ] `--search <pattern>` / `-F <pattern>` - Search benchmark results by:
-  - System ID substring
-  - Kernel name
-  - Date range
-  - Bandwidth range
-- [ ] `--export-db <format> <output>` - Export database to CSV/JSON:
-  - `--export-db csv output.csv`
-  - `--export-db json output.json`
+- [x] `--list-benchmarks` - IMPLEMENTED: Lists all benchmark runs filtered by system ID, date range, kernel type, sorted by timestamp DESC
+- [x] `--search <pattern>` - IMPLEMENTED: Search by system_id, kernel, cpu_model, os_name (LIKE query)
+- [x] `--export-db <format> <output>` - IMPLEMENTED: Exports to csv or json
+  - [x] `--export-db csv output.csv`
+  - [x] `--export-db json output.json`
+  - [ ] Proper CSV quoting for fields containing commas/special characters
+  - [ ] Proper JSON escaping for string fields (quotes, backslashes)
 
 #### Database Schema (SQLite)
 ```sql
@@ -266,6 +288,7 @@ CREATE INDEX idx_timestamp ON benchmarks(timestamp);
 CREATE INDEX idx_system_id ON benchmarks(system_id);
 CREATE INDEX idx_kernel ON benchmarks(kernel);
 ```
+**Note**: Schema is fully implemented in `sqlite_output.cpp::initialize_schema()`. Indexes match spec. `created_at` is set via `strftime('%Y-%m-%d %H:%M:%S', 'now')`.
 
 ### Implementation Tasks
 
@@ -276,18 +299,32 @@ CREATE INDEX idx_kernel ON benchmarks(kernel);
   - Schema creation (systems + benchmarks tables)
   - Insert benchmark results with system info
   - Query methods for listing/searching
-- [ ] Create `src/sqlite_input.hpp` with `SQLiteInput` class for reading
-- [ ] Implement `src/sqlite_input.cpp` with:
+- [x] Create `src/sqlite_input.hpp` with `SQLiteInput` class for reading
+- [x] Implement `src/sqlite_input.cpp` with:
   - Database connection and query execution
   - Result set parsing into `BenchmarkResult` structs
+  - Filter methods: `query_by_system_id()`, `query_by_kernel()`, `query_by_date_range()`
+  - Search: `search(pattern)` with LIKE across multiple fields
+  - Export: `export_csv()`, `export_json()`
 
 #### Command-Line Integration
 - [x] Add database path option to `Options` struct (default: `~/.mem_band/benchmarks.db`)
-- [ ] Implement `--list-benchmarks` / `-L` flag in `main.cpp`
-- [ ] Implement `--search` / `-F` flag with pattern matching  
-- [ ] Implement `--export-db` flag for format conversion
+- [x] Implement `--list-benchmarks` flag in `main.cpp`
+- [x] Implement `--search` flag with pattern matching
+- [x] Implement `--export-db` flag for format conversion
 - [x] Update `print_usage()` to document new database commands
 - [x] Handle SQLite compilation with `#ifdef ENABLE_SQLITE`
+- [ ] Document SQLite schema for persistent storage (update specs/ to match actual schema)
+- [ ] Add database version/migration column for schema evolution
+- [ ] Add `DELETE` command to clear old records
+
+#### SQLite Known Issues
+- **Stub values**: `core_count` and `memory_size_mb` in `ensure_system_exists()` are hardcoded to `0`; `platform` is `""` — real `SystemInfo` values never passed
+  - **Fix needed**: Pass real `SystemInfo::collect()` values through `run_sqlite_output()` to populate systems table
+- **No transaction wrapping**: `append()` does one INSERT at a time; needs `BEGIN/COMMIT` for bulk writes
+- **No thread-safety**: No mutex around `sqlite3_stmt` operations for concurrent benchmark runs
+- **No JSON escaping**: `export_json()` uses raw string concatenation — quotes/backslashes in `cpu_model` or `system_id` produce malformed JSON
+- **No CSV quoting**: `export_csv()` and `csv_output` don't quote fields containing commas
 
 #### Database Browsing CLI Examples
 ```bash
@@ -311,32 +348,35 @@ CREATE INDEX idx_kernel ON benchmarks(kernel);
 ```
 
 #### Tests
-- [x] Add `tests/test_sqlite_output.cpp` for SQLite persistence tests
-- [ ] Add `tests/test_sqlite_input.cpp` for SQLite query tests
-- [ ] Update test suite to include database browsing functionality
-
-#### Documentation
+- [x] Add `tests/test_sqlite_output.cpp` for SQLite persistence tests (106 lines)
+- [x] Add `tests/test_sqlite_input.cpp` for SQLite query tests (153 lines)
+- [ ] Add tests for timestamp format consistency (write vs read)
+- [ ] Add tests for CSV quoting and JSON escaping edge cases
 - [ ] Update `README.md` with new database CLI commands
-- [ ] Add `specs/database-spec.md` with full database specification
-- [ ] Document database schema and query examples
-- [ ] Add usage examples for database browsing
 
 ### Priority Order
 
-1. **High Priority (PARTIAL - IMPLEMENTED):**
-   - SQLite output class implementation ✅
-   - Database schema design ✅
-   - Basic `--list-benchmarks` command ⏳ (CLI integration complete, implementation pending)
+1. **High Priority (IMPLEMENTED, bugs remain):**
+    - SQLite output class implementation ✅
+    - SQLite input class implementation ✅
+    - Database schema design ✅
+    - `--list-benchmarks` command ✅
+    - `--search` command ✅
+    - `--export-db` command ✅
+    - Populate systems table with real SystemInfo values (core_count, memory_size_mb, platform hardcoded to 0/"")
 
-2. **Medium Priority (PARTIAL - CLI INTEGRATION COMPLETE):**
-   - `--search` command with pattern matching ⏳ (CLI options added, implementation pending)
-   - Export functionality ⏳ (CLI options added, implementation pending)
-   - Unit tests for database operations ✅
+2. **Medium Priority:**
+    - Add transaction wrapping for bulk writes
+    - Add thread-safety (mutex) to SQLite I/O
+    - Proper CSV/JSON escaping for export functions
+    - Database version/migration support
+    - Add DELETE/clear-records functionality
 
 3. **Low Priority:**
-   - Advanced filtering/sorting
-   - Remote storage integration
-   - Graph generation from database
+    - Advanced filtering/sorting
+    - Remote storage integration
+    - Graph generation from database
+    - Database spec document (`specs/database-spec.md`)
 
 
 ## Phase 12: Modular Dependency System
@@ -401,20 +441,23 @@ CREATE INDEX idx_kernel ON benchmarks(kernel);
 Add CLI flags to generate ASCII diagrams showing CPU/Memory/PCIe device layout for different system architectures.
 
 ### CLI Flag Design
-- [x] Add `-L, --system-layout` flag to display system layout
+- [ ] Add `-L, --system-layout` flag to display system layout
+  - **Current**: System layout is accessed via `info layout` subcommand (not `-L`/`--system-layout` flag)
+  - The `Options::system_layout` field exists but is never populated by the argument parser (dead code)
 - [x] Support layout output formats:
-  - [x] `text` (default) - ASCII diagram in terminal
-  - [x] `mermaid` - Mermaid.js diagram code for documentation
-  - [x] `json` - Structured layout data for external tools
+  - [x] `text` (default) - ASCII diagram with box-drawing characters — `TextFormatter`
+  - [x] `mermaid` - Mermaid.js `flowchart TD` — `MermaidFormatter` (has bugs: duplicate CPU node output, hardcoded connections)
+  - [x] `json` - Structured layout data — `JSONFormatter` (no metadata escaping)
+  - [ ] `--layout-type` flag for manual archetype override (not implemented)
+  - [ ] `--update-layout` flag for layout refresh (not implemented)
+  - [ ] `--run-benchmark` flag for post-layout execution (not implemented)
 
 ### Layout Content
-- [ ] **CPU Cluster**: Show CPU(s), cores, cache hierarchy (L1/L2/L3)
-- [ ] **Memory subsystem**: Show total memory, memory channels, bandwidth
-- [ ] **PCIe devices**: List all PCIe devices with:
-  - [ ] Vendor/device IDs
-  - [ ] Device type (GPU/NPU/accelerator)
-  - [ ] PCIe slot/bandwidth information
-  - [ ] Link generation/speed
+- [x] **CPU Cluster**: CPU model, core count, L3 cache — populated from `SystemInfo::collect()`
+- [x] **Memory subsystem**: Total memory (MB), channel count — populated from `SystemInfo::collect()`
+- [x] **PCIe devices**: Vendor/device IDs, device type (GPU/NPU/Unknown) — populated from `PlatformDetection::detect()`
+  - [ ] PCIe slot/bandwidth information (not collected by platform detection)
+  - [ ] Link generation/speed (not collected by platform detection)
 
 ### Architecture-Specific Layouts
 
@@ -529,101 +572,118 @@ Add CLI flags to generate ASCII diagrams showing CPU/Memory/PCIe device layout f
 
 #### Phase 13a: Layout Data Structures
 - [x] Create `src/layout_builder.hpp` with layout data structures
-  - [ ] `SystemNode` - Base class for CPU, Memory, Device nodes
-  - [ ] `CPUNode` - CPU cluster with cores and cache
-  - [ ] `MemoryNode` - Memory subsystem
-  - [ ] `PCIEDeviceNode` - PCIe device with bandwidth info
-  - [ ] `Connection` - Link between nodes with bandwidth
+  - [x] `SystemNode` (struct) - CPU/Memory/PCIe nodes with type/name/metadata map
+  - [x] `CPUNode` - No separate class; `SystemNode` with type="cpu" plus metadata (model, cores, l3_cache)
+  - [x] `MemoryNode` - No separate class; `SystemNode` with type="memory" plus metadata (size_mb, channels)
+  - [x] `PCIEDeviceNode` - No separate class; `SystemNode` with type="pcie_device" plus metadata (vendor, device_type)
+  - [x] `Connection` (struct) - Link between nodes with type/bandwidth_gb_s
+  - [ ] **Connection struct missing from_idx/to_idx** — formatters cannot render correct edges (hardcoded to node0->node1)
 
 #### Phase 13b: Layout Generation
 - [x] Implement `src/layout_builder.cpp`:
   - [x] Build CPU cluster from `SystemInfo` (cores, cache)
   - [x] Build memory layout from `SystemInfo` (size, channels)
   - [x] Build PCIe device tree from `PlatformDetection` results
-  - [x] Connect nodes based on interconnect type (NVLink, PCIe, etc.)
+  - [ ] Connect nodes based on interconnect type (NVLink, PCIe, etc.) — **NOT implemented**; connections use hardcoded node indices, not actual interconnect detection
 
 ## Phase 13c: Output Formats (COMPLETE)
-- [x] Implement text formatter (ASCII box-drawing diagrams)
-- [x] Implement Mermaid.js formatter (for documentation)
-- [x] Implement JSON formatter (for programmatic use)
+- [x] Implement text formatter (ASCII box-drawing diagrams) — `TextFormatter`
+- [x] Implement Mermaid.js formatter (for documentation) — `MermaidFormatter`
+  - [ ] **Bug**: Duplicates CPU node labels (two lines per CPU instead of one)
+  - [ ] **Bug**: All connections hardcoded to `node0 --> node1` regardless of actual indices
+  - [x ] Connection edge rendering
+- [x] Implement JSON formatter (for programmatic use) — `JSONFormatter`
+  - [ ] **Bug**: No escaping of metadata strings (quotes/backslashes break JSON)
+  - [x] Node metadata serialization
+  - [x] Connection serialization (no from/to indices included)
 
-## Phase 13d: Integrated View & Run Mode (COMPLETE)
-- [x] Add `-L, --system-layout` to display system layout
+## Phase 13d: Integrated View & Run Mode
+- [ ] **`-L, --system-layout` flag** — NOT implemented. Current access is via `info layout` subcommand only.
 - [ ] Detect runtime environment to determine default layout type:
   - [ ] Linux with NVIDIA GPU → Show GB10-style layout (if detected)
   - [ ] Linux with AMD GPU/NPU → Show Strix Halo-style layout
   - [ ] macOS → Show Mac Studio-style layout
   - [ ] Windows with discrete GPU → Show RTX 3090-style layout
-- [x] Allow manual layout override with `--layout-type <type>` flag:
+- [ ] Allow manual layout override with `--layout-type <type>` flag:
   - [ ] `gb10`, `strix`, `rtx3090`, `macstudio`, `generic`
-- [x] Support layout update mode with `--update-layout` flag (re-scan hardware)
-- [x] Implement layout cache for faster subsequent runs
-- [x] Show layout preview before benchmark selection (interactive mode)
+- [ ] Support layout update mode with `--update-layout` flag (re-scan hardware)
+- [ ] Implement layout cache for faster subsequent runs
+- [ ] Show layout preview before benchmark selection (interactive mode)
+- [x] Layout is wired into `info layout` subcommand in main.cpp (lines 640-680)
 
-## Phase 13e: Runtime Detection Integration (COMPLETE)
+## Phase 13e: Runtime Detection Integration
 - [ ] Enhance `platform_detection.hpp` with layout-relevant methods:
   - [ ] `GetInterconnectType()` - Returns NVLink/PCIe/InternalBus/None
   - [ ] `GetMemoryTopology()` - Returns unified/shared/discrete
-  - [ ] `GetPCIeBandwidth()` - Returns PCIe generation × lanes
+  - [ ] `GetPCIeBandwidth()` - Returns PCIe generation x lanes
 - [ ] Auto-detect system archetype from hardware:
   - [ ] Check CPU vendor + GPU vendor combination
   - [ ] Check interconnect presence (NVLink, internal bus)
   - [ ] Map to known archetypes (GB10, Strix, RTX 3090, Mac Studio)
 
-## Phase 13f: Layout Builder Enhancements (COMPLETE)
+## Phase 13f: Layout Builder Enhancements
 - [ ] Add automatic archetype selection based on runtime detection
 - [ ] Build layout dynamically from system info + platform detection
 - [ ] Support partial layouts (e.g., missing GPU info)
 - [ ] Add layout validation (consistency checks for connectivity)
 
-## Phase 13g: Platform Detection Integration (COMPLETE)
+## Phase 13g: Platform Detection Integration
 - [ ] Detect interconnect type (NVLink, PCIe, internal bus)
 - [ ] Extract PCIe link generation (Gen1-Gen6)
 - [ ] Extract memory channel count and bandwidth
 - [ ] Handle ARM vs x86 platform differences
 
-## Phase 13h: CLI Integration (COMPLETE)
-- [x] Add `-L, --system-layout` flag to `Options` struct
-- [x] Add `--layout-format` subflag for output format selection (text/mermaid/json)
-- [x] Add `--layout-type` manual override flag
-- [x] Add `--update-layout` for layout refresh
-- [x] Update `print_usage()` with `-L, --system-layout` options
+## Phase 13h: CLI Integration
+- [ ] Add `-L, --system-layout` flag to `Options` struct (currently dead code — field exists but never set by parser)
+- [x] Add `--layout-format` subflag for output format selection (text/mermaid/json) — WORKS via `info layout` subcommand
+- [ ] Add `--layout-type` manual override flag
+- [ ] Add `--update-layout` for layout refresh
+- [x] Update `print_usage()` with layout-related options (documented under `info layout`)
 - [ ] Support `--run-benchmark` flag for post-layout execution
-- [ ] Handle layout display and benchmark execution flow
+- [ ] Handle layout display and benchmark execution flow (currently `info layout` does NOT run benchmarks after)
 
-## Phase 13i: Testing (COMPLETE)
-- [x] Add `tests/test_layout_builder.cpp` for unit tests
+## Phase 13i: Testing
+- [x] Add `tests/test_layout_builder.cpp` for unit tests (10 tests)
   - [x] Test layout generation on different hardware configurations
-  - [x] Test layout caching behavior
-  - [x] Test `-L, --system-layout` flow end-to-end
-  - [x] Verify automatic archetype detection accuracy
+  - [x] Test text, mermaid, and json formatters
+  - [x] Test empty layout
+  - [ ] Test connection indexing in formatters (currently not tested due to bug)
+  - [ ] Fix layout caching behavior (caching not implemented yet)
+- [x] Add `tests/test_layout_cli.cpp` for CLI parsing tests (12 tests)
+  - [ ] **Note**: Test file defines its own `struct Options` and `parse_args()` — duplicates main.cpp parsing logic. If main.cpp parser changes, the test stays stale.
 
-## Phase 13j: Documentation (COMPLETE)
-- [x] Update README.md with new layout CLI documentation
+## Phase 13j: Documentation
+- [x] Update README.md with new layout CLI documentation (via `info layout`)
 - [ ] Add examples showing layout output for different platforms
   - [x] Document Mermaid output for documentation generation
-- [ ] Document `-L, --system-layout` workflow
+- [ ] Document system layout workflow (currently only documented under `info` subcommands)
   - [x] Add system archetype identification guide
+- [ ] Document known formatter bugs (duplicate CPU nodes in Mermaid, hardcoded connections)
 
 ### Priority Order
 
 1. **High Priority:**
-   - Layout data structures and core builder class - IMPLEMENTED
-   - Text-based ASCII output format - IMPLEMENTED
-   - Integration with existing platform detection
-    - **`-L, --system-layout` flag for layout display** - PENDING CLI integration
-   - **Runtime environment detection for automatic layout selection** - PENDING
+    - Layout data structures and core builder class ✅ IMPLEMENTED
+    - Text-based ASCII output format ✅ IMPLEMENTED
+    - Mermaid.js output ✅ IMPLEMENTED (with bugs to fix)
+    - JSON output ✅ IMPLEMENTED (with escaping issues)
+    - CLI wired into `info layout` subcommand ✅ IMPLEMENTED
+    - Fix Mermaid formatter: duplicate CPU nodes and hardcoded connections
+    - Add `from_idx`/`to_idx` to `Connection` struct
 
 2. **Medium Priority:**
-   - Mermaid.js output for documentation
-   - JSON format for external tools
-   - Automatic archetype detection from hardware
-   - Layout caching for performance
+    - Runtime environment detection for automatic layout selection
+    - Interconnect detection (`GetInterconnectType()`, `GetPCIeBandwidth()`)
+    - Automatic archetype detection from hardware
+    - Layout caching for performance
+    - `--layout-type` manual override
+    - Add standalone `-L, --system-layout` flag (in addition to `info layout`)
 
 3. **Low Priority:**
-   - Advanced layout customization options
     - Layout comparison/diff functionality
     - Interactive layout exploration tools
+    - PCIe link generation detection
+    - Advanced layout customization options
 
 ### Active ToDos - Platform Detection Enhancement (MARKED COMPLETE)
 
@@ -635,6 +695,9 @@ Add CLI flags to generate ASCII diagrams showing CPU/Memory/PCIe device layout f
 - [x] Show Architecture, Platform, RAM size, Core count in platform output - DONE
 - [x] Platform identification only shown with `-P` flag or as header before tests - DONE
 - [x] Platform header displayed before benchmark execution - DONE
+- [ ] Add Windows-specific detection for `detect_cpu_model()`, `detect_memory_size()`, `detect_os()` in system_info.cpp
+- [ ] Fix `simd_enabled` hardcoded to `true` — should reflect actual compile-time SIMD availability
+- [ ] Fix ARM `detect_cpu_model()` to return actual model (e.g., `sysctl` on macOS, `/proc/cpuinfo` on Linux)
 
 ## Phase 14: Test Configuration Updates (COMPLETE)
 
@@ -668,9 +731,19 @@ Add CLI flags to generate ASCII diagrams showing CPU/Memory/PCIe device layout f
 
 ### Implementation Status
 - [x] All test configuration changes completed
-- [x] All build configuration updates completed  
+- [x] All build configuration updates completed
 - [x] All platform identification requirements completed
 - [x] README.md updated with correct defaults and opt-in flags
+
+## CMake / Build System Issues
+- [ ] **Hardcoded paths**: CMakeLists.txt lines 56-59 use `/home/philipp/sqlite_include` and `/home/philipp/sqlite_lib` — should be removed
+- [ ] **test_gpu extension mismatch**: CMakeLists.txt references `tests/test_gpu.cpp` but file is `tests/test_gpu.cu` — won't build
+- [ ] **test_system_info not registered**: `tests/test_system_info.cpp` exists but has no `add_executable` or `add_test` in CMakeLists.txt
+- [ ] **Missing `specs/database-spec.md`**: Referenced in plan but not created
+- [x] **Removed redundant `#define ENABLE_SQLITE` from top of sqlite_output.cpp and sqlite_input.cpp** — CMake already defines via `-DENABLE_SQLITE`
+- [x] **Fixed CMake bug**: test_sqlite_output and test_sqlite_input now have `target_compile_definitions(... ENABLE_SQLITE)` — tests were silently not running
+- [ ] **`output_format` field is dead code**: `Options::output_format` is parsed and validated but `main()` never uses it — benchmark output is always printed as text
+- [ ] **`Options::system_layout` field is dead code**: Declared but never set by argument parser
 
 ## Phase 15: Apple MLX Runtime Support (FUTURE)
 

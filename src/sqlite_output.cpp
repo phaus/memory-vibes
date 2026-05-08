@@ -1,4 +1,3 @@
-#define ENABLE_SQLITE
 #include "sqlite_output.hpp"
 #include <iostream>
 #include <chrono>

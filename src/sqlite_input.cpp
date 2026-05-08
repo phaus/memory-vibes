@@ -1,4 +1,3 @@
-#define ENABLE_SQLITE
 #include "sqlite_input.hpp"
 #include <fstream>
 #include <iostream>
