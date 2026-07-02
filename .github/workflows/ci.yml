@@ -15,36 +15,22 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        include:
-          - os: windows-latest
-            cmake-preset: "Release"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Set up CMake
-        uses: jwlawson/actions-setup-cmake@v1
-        with:
-          cmake-version: '3.22.0'
 
       - name: Set up MSVC environment
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Set CMake timeouts
-        run: |
-          echo "CMAKE_FETCH_TIMEOUT=600" >> $GITHUB_ENV
-          echo "CMAKE_DOWNLOAD_TIMEOUT=600" >> $GITHUB_ENV
-
       - name: Configure and Build
         run: |
           if [ "${{ runner.os }}" = "Windows" ]; then
             cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -G "Visual Studio 17 2022" -A x64
-            cmake --build build --config Release
           else
             cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-            cmake --build build
           fi
+          cmake --build build --config Release
         shell: bash
 
       - name: Run Tests
