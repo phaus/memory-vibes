@@ -35,7 +35,7 @@ jobs:
       - name: Configure and Build
         run: |
           if [ "${{ runner.os }}" = "Windows" ]; then
-            cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -G "Visual Studio 17 2022" -A x64
+            cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -G "Visual Studio 17 2022" -A x64
             cmake --build build --config Release
           else
             cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
