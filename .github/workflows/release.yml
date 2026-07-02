@@ -75,17 +75,17 @@ jobs:
           # ── Windows ───────────────────────────────────────────
           - os: windows-latest
             name: windows-x64
-            cmake_extra: "-A x64"
+            cmake_extra: '-G "Visual Studio 17 2022" -A x64'
             artifact: mem_band.exe
             cross: false
           - os: windows-latest
             name: windows-x64-simd
-            cmake_extra: "-A x64 -DENABLE_SIMD=ON"
+            cmake_extra: '-G "Visual Studio 17 2022" -A x64 -DENABLE_SIMD=ON'
             artifact: mem_band.exe
             cross: false
           - os: windows-latest
             name: windows-x86
-            cmake_extra: "-A Win32"
+            cmake_extra: '-G "Visual Studio 17 2022" -A Win32'
             artifact: mem_band.exe
             cross: false
 
