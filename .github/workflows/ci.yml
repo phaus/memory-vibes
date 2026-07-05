@@ -20,7 +20,7 @@ jobs:
           - { os: ubuntu-latest, label: linux-x86_64-simd, cmake_args: "-DENABLE_SIMD=ON", target: "mem_band", build_test: false }
           - { os: ubuntu-latest, label: linux-arm32, cmake_args: "-DCMAKE_C_COMPILER=arm-linux-gnueabihf-gcc -DCMAKE_CXX_COMPILER=arm-linux-gnueabihf-g++ -DBUILD_TESTING=OFF -DCHECK_FEATURES=OFF", target: "arm-linux-gnueabihf-gcc", build_test: false }
           - { os: ubuntu-latest, label: linux-arm64, cmake_args: "-DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++ -DBUILD_TESTING=OFF -DCHECK_FEATURES=OFF", target: "aarch64-linux-gnu-gcc", build_test: false }
-          - { os: ubuntu-latest, label: linux-i386, cmake_args: "-DCMAKE_C_FLAGS=-m32 -DCMAKE_CXX_FLAGS=-m32", target: "i686", build_test: false }
+          - { os: ubuntu-latest, label: linux-i386, cmake_args: "-DCMAKE_C_FLAGS=-m32 -DCMAKE_CXX_FLAGS=-m32 -DBUILD_TESTING=OFF -DCHECK_FEATURES=OFF", target: "i686", build_test: false }
           # macOS extra configs
           - { os: macos-latest, label: macos-x86_64, cmake_args: "-DCMAKE_OSX_ARCHITECTURES=x86_64", target: "x86_64", build_test: false }
           - { os: macos-latest, label: macos-arm64, cmake_args: "-DCMAKE_OSX_ARCHITECTURES=arm64", target: "arm64", build_test: false }
@@ -32,9 +32,34 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install cross-compilers (ARM)
+        if: contains(matrix.config.label, 'arm')
+        run: |
+          sudo apt-get update
+          if [[ "${{ matrix.config.label }}" == *"arm32"* ]]; then
+            sudo apt-get install -y gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
+          elif [[ "${{ matrix.config.label }}" == *"arm64"* ]]; then
+            sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+          fi
+
+      - name: Install 32-bit libs (i386)
+        if: contains(matrix.config.label, 'i386')
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt-get install -y gcc-multilib g++-multilib
+
+      - name: Set up MSVC environment
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Configure and Build
         run: |
-          cmake -S . -B build ${{ matrix.config.cmake_args }} -DCMAKE_BUILD_TYPE=Release
+          cmake_args="${{ matrix.config.cmake_args }}"
+          if [ "${{ runner.os }}" != "Windows" ]; then
+            cmake_args="$cmake_args -DCMAKE_BUILD_TYPE=Release"
+          fi
+          cmake -S . -B build $cmake_args
           cmake --build build --config Release
         shell: bash
 
