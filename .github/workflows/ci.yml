@@ -18,8 +18,8 @@ jobs:
           - { os: ubuntu-latest, label: ubuntu-x86_64, cmake_args: "", target: "mem_band", build_test: false }
           # Linux extra configs
           - { os: ubuntu-latest, label: linux-x86_64-simd, cmake_args: "-DENABLE_SIMD=ON", target: "mem_band", build_test: false }
-          - { os: ubuntu-latest, label: linux-arm32, cmake_args: "-DCMAKE_C_COMPILER=arm-linux-gnueabihf-gcc -DCMAKE_CXX_COMPILER=arm-linux-gnueabihf-g++", target: "arm-linux-gnueabihf-gcc", build_test: false }
-          - { os: ubuntu-latest, label: linux-arm64, cmake_args: "-DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++", target: "aarch64-linux-gnu-gcc", build_test: false }
+          - { os: ubuntu-latest, label: linux-arm32, cmake_args: "-DCMAKE_C_COMPILER=arm-linux-gnueabihf-gcc -DCMAKE_CXX_COMPILER=arm-linux-gnueabihf-g++ -DBUILD_TESTING=OFF -DCHECK_FEATURES=OFF", target: "arm-linux-gnueabihf-gcc", build_test: false }
+          - { os: ubuntu-latest, label: linux-arm64, cmake_args: "-DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++ -DBUILD_TESTING=OFF -DCHECK_FEATURES=OFF", target: "aarch64-linux-gnu-gcc", build_test: false }
           - { os: ubuntu-latest, label: linux-i386, cmake_args: "-DCMAKE_C_FLAGS=-m32 -DCMAKE_CXX_FLAGS=-m32", target: "i686", build_test: false }
           # macOS extra configs
           - { os: macos-latest, label: macos-x86_64, cmake_args: "-DCMAKE_OSX_ARCHITECTURES=x86_64", target: "x86_64", build_test: false }
@@ -31,10 +31,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Set up MSVC environment
-        if: runner.os == 'Windows'
-        uses: ilammy/msvc-dev-cmd@v1
 
       - name: Configure and Build
         run: |
