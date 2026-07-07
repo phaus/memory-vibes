@@ -73,19 +73,26 @@ jobs:
             smoke: false
 
           # ── Windows ───────────────────────────────────────────
+          # Uses the Ninja generator together with the MSVC dev environment
+          # (see the "Set up MSVC environment" step). This avoids depending on
+          # a specific Visual Studio generator, which breaks whenever the
+          # windows-latest image bumps its Visual Studio major version.
           - os: windows-latest
             name: windows-x64
-            cmake_extra: '-G "Visual Studio 17 2022" -A x64'
+            cmake_extra: "-G Ninja"
+            msvc_arch: x64
             artifact: mem_band.exe
             cross: false
           - os: windows-latest
             name: windows-x64-simd
-            cmake_extra: '-G "Visual Studio 17 2022" -A x64 -DENABLE_SIMD=ON'
+            cmake_extra: "-G Ninja -DENABLE_SIMD=ON"
+            msvc_arch: x64
             artifact: mem_band.exe
             cross: false
           - os: windows-latest
             name: windows-x86
-            cmake_extra: '-G "Visual Studio 17 2022" -A Win32'
+            cmake_extra: "-G Ninja"
+            msvc_arch: x86
             artifact: mem_band.exe
             cross: false
 
@@ -111,6 +118,8 @@ jobs:
       - name: Set up MSVC environment
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.msvc_arch }}
 
       - name: Configure
         run: >
@@ -127,21 +136,13 @@ jobs:
       - name: Run smoke test
         if: matrix.smoke != false && matrix.cross != true
         run: |
-          if [ "${{ runner.os }}" = "Windows" ]; then
-            ./build/Release/${{ matrix.artifact }} memory --quick-test
-          else
-            ./build/${{ matrix.artifact }} memory --quick-test
-          fi
+          ./build/${{ matrix.artifact }} memory --quick-test
         shell: bash
 
       - name: Package artifact
         run: |
           mkdir -p dist
-          if [ "${{ runner.os }}" = "Windows" ]; then
-            cp build/Release/${{ matrix.artifact }} dist/
-          else
-            cp build/${{ matrix.artifact }} dist/
-          fi
+          cp build/${{ matrix.artifact }} dist/
           cp README.md LICENSE dist/ 2>/dev/null || true
           cd dist
           if [ "${{ runner.os }}" = "Windows" ]; then
